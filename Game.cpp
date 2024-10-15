@@ -32,6 +32,20 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, bo
     } else {
         isRunning = false;
     }
+
+    objectInit();
+}
+
+void Game::objectInit() {
+    // Add your object initialisation here
+
+    //Test scene
+    Scene *main = new Scene("Main");
+    GameObject *player = new GameObject("Player");
+    // player->AddComponent(new SpriteRenderer("Assets/Player.png"));
+
+    
+
 }
 
 void Game::handleEvents() {

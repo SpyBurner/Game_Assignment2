@@ -2,6 +2,7 @@
 #define GAME_HPP
 
 #include<SDL2/SDL.h>
+#include "CustomClasses.hpp"
 class Game{
 
 public:    
@@ -9,6 +10,7 @@ public:
     ~Game();
 
     void init(const char* title, int xpos, int ypos, int width, int height, bool fullscreen);
+    void objectInit();
     void handleEvents();
     void update();
     void render();

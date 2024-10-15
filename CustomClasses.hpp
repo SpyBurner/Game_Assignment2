@@ -7,6 +7,7 @@
 #include <map>
 #include <utility>
 #include <vector>
+#include <functional>
 
 class Vector2 {
 public:
@@ -31,7 +32,6 @@ private:
     GameObjectManager();
     static GameObjectManager *instance;
 
-public:
     ~GameObjectManager();
 
     static GameObjectManager *GetInstance();
@@ -39,9 +39,14 @@ public:
     void AddGameObject(std::string name, GameObject *gameObject);
     void RemoveGameObject(std::string name);
     GameObject *GetGameObject(std::string name);
+    void Clear();
 
     void Update();
     void Draw();
+
+    friend class SceneManager;
+    friend class Scene;
+    friend class GameObject;
 };
 
 class Component {
@@ -51,14 +56,14 @@ public:
     virtual ~Component();
     virtual void Update() = 0;
     virtual void Draw() = 0;
-    virtual Component* Clone(GameObject *parent) = 0;
+    virtual Component *Clone(GameObject *parent) = 0;
 };
 
 class SpriteRenderer : public Component {
 private:
     SDL_Renderer *renderer = nullptr;
+
 public:
-    //Controlled by the animator, DO NOT DESTROY
     SDL_Texture *spriteSheet = nullptr;
     SDL_Rect spriteRect;
 
@@ -68,7 +73,7 @@ public:
     ~SpriteRenderer();
     void Update();
     void Draw();
-    SpriteRenderer* Clone(GameObject *parent);
+    Component *Clone(GameObject *parent);
 
     static SDL_Texture *LoadSpriteSheet(std::string path);
 };
@@ -82,30 +87,32 @@ public:
     Vector2 spriteSize = Vector2(1, 1);
 
     SDL_Texture *spriteSheet;
+    SDL_Rect currentSpriteRect;
 
     int currentSprite = 0, startSprite = 0, endSprite = 0;
 
     float speedScale = 0, animCooldown = 0, lastFrameTime = 0, startTime = 0;
 
-    SDL_Event *onComplete = nullptr;
+    Event *onComplete = nullptr;
 
     AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale);
     ~AnimationClip();
 
     void AdvanceFrame();
     void Ready();
-    std::pair<SDL_Texture*, Vector2> GetCurrentSprite();
+    std::pair<SDL_Texture *, Vector2> GetCurrentSprite();
 };
 
 class Animator : public Component {
 private:
-    std::vector<AnimationClip *> clips;
+    std::map<std::string, AnimationClip> clips;
     AnimationClip *currentClip = nullptr;
 
 public:
-    Animator(GameObject *gameObject, std::vector<AnimationClip *> clips);
+    Animator(GameObject *gameObject, std::vector<AnimationClip> clips);
     ~Animator();
 
+    //Update the SpriteRenderer with the current sprite
     void Update();
     void Draw();
 
@@ -113,7 +120,9 @@ public:
     void Stop();
 
     AnimationClip *GetClip(std::string name);
-    std::vector<AnimationClip *> *GetAllClips();
+    std::vector<AnimationClip> GetAllClips();
+
+    Component* Clone(GameObject *parent);
 };
 
 class Transform {
@@ -129,9 +138,9 @@ private:
     std::vector<Component *> components;
 
 public:
-    Transform *transform;
-    //Prefabs do not need a name
+    Transform transform;
     GameObject();
+    GameObject(std::string name);
     ~GameObject();
     void Update();
     void Draw();
@@ -159,4 +168,71 @@ public:
     static GameObject *Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale);
     static void Destroy(std::string name);
 };
+
+//Event
+class Event {
+public:
+    using Handler = std::function<void()>;
+
+    void addHandler(Handler handler) {
+        handlers.push_back(handler);
+    }
+
+    void raise() {
+        for (auto& handler : handlers) {
+            handler();
+        }
+    }
+
+private:
+    std::vector<Handler> handlers;
+};
+
+//More like a template for the GameObjectManager
+class Scene{
+private:
+    std::map<std::string, GameObject *> gameObjects;
+    std::string name;
+
+    std::function<void()> logic;
+public:
+    Scene(std::string name);
+    ~Scene();
+
+    void AssignLogic(std::function<void()> logic);
+    void RunLogic();
+
+    void AddGameObject(std::string name, GameObject *gameObject);
+    void RemoveGameObject(std::string name);
+
+    void Load();
+
+    std::string GetName();
+};
+
+//Wrapper for all, including GameObjectManager
+//Singleton
+class SceneManager{
+private:
+    Scene *currentScene;
+    SceneManager();
+    static SceneManager *instance;
+
+    std::map<std::string, Scene *> scenes;
+public: 
+    ~SceneManager();
+    static SceneManager *GetInstance();
+
+    void RunLogic();
+
+    void AddScene(Scene *scene);
+    void LoadScene(std::string sceneName);
+    Scene* GetCurrentScene();
+
+
+    void Update();
+    void Draw();
+};
+
 #endif
+
