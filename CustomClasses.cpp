@@ -1,6 +1,6 @@
 #include "CustomClasses.hpp"
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #pragma region Vector2
 // Vector2 class implementation
@@ -39,28 +39,31 @@ float Vector2::Dot(Vector2 v1, Vector2 v2) {
 
 #pragma endregion
 
-
 #pragma region GameObjectManager
 // GameObjectManager class implementation
 GameObjectManager::GameObjectManager() {}
 
-GameObjectManager* GameObjectManager::Instance() {
-    static GameObjectManager instance;
-    return &instance;
-}
-
 GameObjectManager::~GameObjectManager() {
-    for (auto& pair : gameObjects) {
+    for (auto &pair : gameObjects) {
         delete pair.second;
     }
     gameObjects.clear();
 }
 
 GameObjectManager* GameObjectManager::GetInstance() {
-    return Instance();
+    if (instance == nullptr) {
+        instance = new GameObjectManager();
+    }
+    return instance;
 }
 
-void GameObjectManager::AddGameObject(std::string name, GameObject* gameObject) {
+void GameObjectManager::AddGameObject(std::vector<std::pair<std::string, GameObject *>> gameObjects) {
+    for (auto &pair : gameObjects) {
+        this->gameObjects[pair.first] = pair.second;
+    }
+}
+
+void GameObjectManager::AddGameObject(std::string name, GameObject *gameObject) {
     gameObjects[name] = gameObject;
 }
 
@@ -72,7 +75,7 @@ void GameObjectManager::RemoveGameObject(std::string name) {
     }
 }
 
-GameObject* GameObjectManager::GetGameObject(std::string name) {
+GameObject *GameObjectManager::GetGameObject(std::string name) {
     auto it = gameObjects.find(name);
     if (it != gameObjects.end()) {
         return it->second;
@@ -81,13 +84,13 @@ GameObject* GameObjectManager::GetGameObject(std::string name) {
 }
 
 void GameObjectManager::Update() {
-    for (auto& pair : gameObjects) {
+    for (auto &pair : gameObjects) {
         pair.second->Update();
     }
 }
 
 void GameObjectManager::Draw() {
-    for (auto& pair : gameObjects) {
+    for (auto &pair : gameObjects) {
         pair.second->Draw();
     }
 }
@@ -96,57 +99,48 @@ void GameObjectManager::Draw() {
 
 #pragma region GameObject
 // GameObject class implementation
-class Transform {
-public:
-    Vector2 position, rotation, scale;
+Transform::Transform() : position(Vector2(0, 0)), rotation(Vector2(0, 0)), scale(Vector2(1, 1)) {}
+Transform::Transform(Vector2 position, Vector2 rotation, Vector2 scale) {
+    this->position = position;
+    this->rotation = rotation;
+    this->scale = scale;
+}
 
-    Transform() : position(Vector2()), rotation(Vector2()), scale(Vector2(1, 1)) {}
-
-    Transform(Vector2 position, Vector2 rotation, Vector2 scale)
-        : position(position), rotation(rotation), scale(scale) {}
-};
-
-GameObject::GameObject() {}
+GameObject::GameObject() {
+    transform = new Transform();
+}
 
 GameObject::~GameObject() {
     delete transform;
 }
 
 void GameObject::Update() {
-    // Update logic for the game object
+    for (auto &component : components) {
+        component->Update();
+    }
 }
 
 void GameObject::Draw() {
-    // // Assuming SDL_Renderer* renderer is available in the scope
-    // SDL_Rect rect;
-    // rect.x = static_cast<int>(transform->position.x);
-    // rect.y = static_cast<int>(transform->position.y);
-    // rect.w = static_cast<int>(transform->scale.x);
-    // rect.h = static_cast<int>(transform->scale.y);
-
-    // // Set the drawing color (e.g., white)
-    // SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-
-    // // Draw the rectangle
-    // SDL_RenderFillRect(renderer, &rect);
+    for (auto &component : components) {
+        component->Draw();
+    }
 }
 
-GameObject* GameObject::Instantiate(std::string name, const GameObject& origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale) {
-    GameObject* newObject = new GameObject(origin);
-    
-    // Set position, rotation and scale
-    newObject->transform = new Transform(Vector2(position.first, position.second), Vector2(rotation.first, rotation.second), Vector2(scale.first, scale.second));
-
-    // Add to manager
-    GameObjectManager::GetInstance()->AddGameObject(name, newObject);
-    return newObject;
+GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale) {
+    return Instantiate(name, origin, Vector2(position.first, position.second), Vector2(rotation.first, rotation.second), Vector2(scale.first, scale.second));
 }
 
-GameObject* GameObject::Instantiate(std::string name, const GameObject& origin,  Vector2 position, Vector2 rotation, Vector2 scale) {
-    GameObject* newObject = new GameObject(origin);
-    
+GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale) {
+    GameObject *newObject = new GameObject(origin);
+
     // Set position, rotation and scale
     newObject->transform = new Transform(position, rotation, scale);
+
+    // Deep copy components
+    for (auto &component : origin.components) {
+        Component *newComponent = component->Clone(newObject);
+        newObject->components.push_back(newComponent);
+    }
 
     // Add to manager
     GameObjectManager::GetInstance()->AddGameObject(name, newObject);
@@ -156,4 +150,76 @@ GameObject* GameObject::Instantiate(std::string name, const GameObject& origin, 
 void GameObject::Destroy(std::string name) {
     GameObjectManager::GetInstance()->RemoveGameObject(name);
 }
+#pragma endregion
+
+#pragma region Component
+// Component classes implementation
+Component::Component(GameObject *parent) : gameObject(parent) {}
+
+// SpriteRenderer class implementation
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet = nullptr) : Component(gameObject) {
+    this->renderer = renderer;
+    this->spriteSheet = spriteSheet;
+}
+
+SpriteRenderer::~SpriteRenderer() {}
+
+void SpriteRenderer::Update() {}
+
+void SpriteRenderer::Draw() {
+    SDL_Rect destRect;
+    // Moving the rect to center the sprite
+    destRect.x = gameObject->transform->position.x - spriteRect.w / 2;
+    destRect.y = gameObject->transform->position.y - spriteRect.h / 2;
+    destRect.w = spriteRect.w;
+    destRect.h = spriteRect.h;
+
+    SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
+}
+
+SpriteRenderer* SpriteRenderer::Clone(GameObject *parent) {
+    SpriteRenderer *newRenderer = new SpriteRenderer(parent, renderer, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
+    newRenderer->spriteRect = spriteRect;
+    return newRenderer;
+}
+
+// AnimationClip class implementation
+AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteSize,
+                             float length, bool loop, float speedScale) {
+    this->name = name;
+    this->spriteSize = spriteSize;
+    this->length = length;
+    this->loop = loop;
+    this->speedScale = speedScale;
+
+    spriteSheet = SpriteRenderer::LoadSpriteSheet(path);
+}
+
+AnimationClip::~AnimationClip() {
+    SDL_DestroyTexture(spriteSheet);
+}
+
+void AnimationClip::AdvanceFrame() {
+    if (!isPlaying)
+        return;
+
+    float currentTime = SDL_GetTicks();
+    if (currentTime - lastFrameTime <= animCooldown)
+        return;
+
+    lastFrameTime = currentTime;
+    currentSprite++;
+
+    if (loop) {
+        currentSprite = 0;
+    } else {
+        isPlaying = false;
+        if (onComplete != nullptr) {
+            SDL_PushEvent(onComplete);
+        }
+    }
+}
+
+// Animator class implementation
+
 #pragma endregion
