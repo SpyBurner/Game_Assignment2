@@ -1,6 +1,11 @@
 #include "CustomClasses.hpp"
 #include <cmath>
 #include <iostream>
+#include <SDL2/SDL_image.h>
+//INIT
+GameObjectManager *GameObjectManager::instance = nullptr;
+SceneManager *SceneManager::instance = nullptr;
+//
 
 #pragma region Vector2
 // Vector2 class implementation
@@ -48,6 +53,7 @@ GameObjectManager::~GameObjectManager() {
         delete pair.second;
     }
     gameObjects.clear();
+    delete instance;
 }
 
 GameObjectManager *GameObjectManager::GetInstance() {
@@ -57,14 +63,14 @@ GameObjectManager *GameObjectManager::GetInstance() {
     return instance;
 }
 
-void GameObjectManager::AddGameObject(std::vector<std::pair<std::string, GameObject *>> gameObjects) {
-    for (auto &pair : gameObjects) {
-        this->gameObjects[pair.first] = pair.second;
+void GameObjectManager::AddGameObject(std::vector<GameObject *> gameObjects) {
+    for (auto &gameObject : gameObjects) {
+        this->gameObjects[gameObject->GetName()] = gameObject;
     }
 }
 
-void GameObjectManager::AddGameObject(std::string name, GameObject *gameObject) {
-    gameObjects[name] = gameObject;
+void GameObjectManager::AddGameObject(GameObject *gameObject) {
+    gameObjects[gameObject->GetName()] = gameObject;
 }
 
 void GameObjectManager::RemoveGameObject(std::string name) {
@@ -139,12 +145,20 @@ void GameObject::Draw() {
     }
 }
 
+std::string GameObject::GetName() {
+    return name;
+}
+
+void GameObject::AddComponent(Component *component) {
+    components.push_back(component);
+}
+
 GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale) {
     return Instantiate(name, origin, Vector2(position.first, position.second), Vector2(rotation.first, rotation.second), Vector2(scale.first, scale.second));
 }
 
 GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale) {
-    GameObject *newObject = new GameObject(origin);
+    GameObject *newObject = new GameObject(name);
 
     // Deep copy transform
     newObject->transform = origin.transform;
@@ -156,7 +170,7 @@ GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, 
     }
 
     // Add to manager
-    GameObjectManager::GetInstance()->AddGameObject(name, newObject);
+    GameObjectManager::GetInstance()->AddGameObject(newObject);
     return newObject;
 }
 
@@ -169,9 +183,15 @@ void GameObject::Destroy(std::string name) {
 // Component classes implementation
 Component::Component(GameObject *parent) : gameObject(parent) {}
 
+Component::~Component() {}
+
 #pragma region SpriteRenderer
 // SpriteRenderer class implementation
-SpriteRenderer::SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet = nullptr) : Component(gameObject) {
+// void SpriteRenderer::SetRenderer(SDL_Renderer *renderer){
+//     SpriteRenderer::renderer = renderer;
+// }
+
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
     this->renderer = renderer;
     this->spriteSheet = spriteSheet;
 }
@@ -198,6 +218,19 @@ Component *SpriteRenderer::Clone(GameObject *parent) {
     return newRenderer;
 }
 
+SDL_Texture *LoadSpriteSheet(std::string &path) {
+    SDL_Surface *surface = IMG_Load(path.c_str());
+    if (!surface) {
+        std::cerr << "Failed to load image: " << path << std::endl;
+        return nullptr;
+    }
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(RENDERER, surface);
+    SDL_FreeSurface(surface);
+
+    return texture;
+}
+
 #pragma endregion
 
 #pragma region Animator
@@ -212,7 +245,7 @@ AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteS
     this->speedScale = speedScale;
 
     // Sprite setup
-    spriteSheet = SpriteRenderer::LoadSpriteSheet(path);
+    spriteSheet = LoadSpriteSheet(path);
 
     currentSprite = startSprite;
 
@@ -230,6 +263,10 @@ AnimationClip::~AnimationClip() {
     delete onComplete;
 }
 
+std::string AnimationClip::GetName() {
+    return name;
+}
+
 void AnimationClip::AdvanceFrame() {
     if (!isPlaying)
         return;
@@ -244,6 +281,8 @@ void AnimationClip::AdvanceFrame() {
     if (currentSprite >= endSprite) {
         if (loop) {
             currentSprite = startSprite;
+            currentSpriteRect.x = currentSprite * spriteSize.x;
+            currentSpriteRect.y = spriteSize.y;
         } else {
             currentSprite = endSprite;
             isPlaying = false;
@@ -261,10 +300,14 @@ void AnimationClip::Ready() {
     lastFrameTime = SDL_GetTicks() - animCooldown * speedScale;
 }
 
+std::pair<SDL_Texture *, SDL_Rect> AnimationClip::GetCurrentSpriteInfo() {
+    return {spriteSheet, currentSpriteRect};
+}
+
 // Animator class implementation
 Animator::Animator(GameObject *gameObject, std::vector<AnimationClip> clips) : Component(gameObject) {
     for (auto &clip : clips) {
-        this->clips[clip.name] = clip;
+        this->clips.insert({clip.GetName(), clip});
     }
     currentClip = &(clips[0]);
 }
@@ -276,12 +319,12 @@ Animator::~Animator() {
 void Animator::Update() {
     if (currentClip)
         currentClip->AdvanceFrame();
-    std::pair<SDL_Texture *, Vector2> sprite = currentClip->GetCurrentSprite();
+    std::pair<SDL_Texture *, SDL_Rect> sheetInfo = currentClip->GetCurrentSpriteInfo();
 
     SpriteRenderer *renderer = gameObject->GetComponent<SpriteRenderer>();
     if (renderer) {
-        renderer->spriteSheet = sprite.first;
-        renderer->spriteRect = currentClip->currentSpriteRect;
+        renderer->spriteSheet = sheetInfo.first;
+        renderer->spriteRect = sheetInfo.second;
     }
 }
 
@@ -347,8 +390,8 @@ void Scene::RunLogic() {
     }
 }
 
-void Scene::AddGameObject(std::string name, GameObject *gameObject) {
-    gameObjects[name] = gameObject;
+void Scene::AddGameObject(GameObject *gameObject) {
+    gameObjects[gameObject->GetName()] = gameObject;
 }
 
 void Scene::RemoveGameObject(std::string name) {
@@ -364,7 +407,7 @@ void Scene::Load() {
     GameObjectManager::GetInstance()->Clear();
 
     for (auto &pair : gameObjects) {
-        GameObjectManager::GetInstance()->AddGameObject(pair.first, pair.second);
+        GameObjectManager::GetInstance()->AddGameObject(pair.second);
     }
 }
 
@@ -379,6 +422,7 @@ SceneManager::~SceneManager() {
         delete pair.second;
     }
     scenes.clear();
+    delete instance;
 }
 
 SceneManager *SceneManager::GetInstance() {
@@ -417,7 +461,7 @@ void SceneManager::Update() {
     GameObjectManager::GetInstance()->Update();
 }
 
-void SceneManager::Draw() {
+void SceneManager::Draw() { 
     GameObjectManager::GetInstance()->Draw();
 }
 

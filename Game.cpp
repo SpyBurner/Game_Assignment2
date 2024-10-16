@@ -1,4 +1,5 @@
 #include "Game.hpp"
+#include "CustomClasses.hpp"
 #include <iostream>
 
 Game::Game() {
@@ -42,10 +43,17 @@ void Game::objectInit() {
     //Test scene
     Scene *main = new Scene("Main");
     GameObject *player = new GameObject("Player");
-    // player->AddComponent(new SpriteRenderer("Assets/Player.png"));
+    player->transform.position = Vector2(100, 100);
+    player->AddComponent(new SpriteRenderer(player, renderer, Vector2(35, 44)));
+    player->AddComponent(new Animator(player, {
+        AnimationClip("Idle", "Assets/kirby_fall.png", Vector2(35, 44), 7, true, 2)
+    }));
+    player->GetComponent<Animator>()->Play("Idle");
 
-    
+    main->AddGameObject(player);
 
+    SceneManager::GetInstance()->AddScene(main);
+    SceneManager::GetInstance()->LoadScene("Main");
 }
 
 void Game::handleEvents() {

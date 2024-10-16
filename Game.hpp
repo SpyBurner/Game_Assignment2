@@ -2,7 +2,6 @@
 #define GAME_HPP
 
 #include<SDL2/SDL.h>
-#include "CustomClasses.hpp"
 class Game{
 
 public:    

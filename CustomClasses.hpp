@@ -9,6 +9,11 @@
 #include <vector>
 #include <functional>
 
+class GameObject;
+class Event;
+
+static SDL_Renderer *RENDERER = nullptr;
+
 class Vector2 {
 public:
     float x, y;
@@ -35,8 +40,8 @@ private:
     ~GameObjectManager();
 
     static GameObjectManager *GetInstance();
-    void AddGameObject(std::vector<std::pair<std::string, GameObject *>> gameObjects);
-    void AddGameObject(std::string name, GameObject *gameObject);
+    void AddGameObject(std::vector<GameObject *> gameObjects);
+    void AddGameObject(GameObject *gameObject);
     void RemoveGameObject(std::string name);
     GameObject *GetGameObject(std::string name);
     void Clear();
@@ -59,9 +64,11 @@ public:
     virtual Component *Clone(GameObject *parent) = 0;
 };
 
+SDL_Texture *LoadSpriteSheet(std::string &path);
+
 class SpriteRenderer : public Component {
 private:
-    SDL_Renderer *renderer = nullptr;
+    SDL_Renderer *renderer;
 
 public:
     SDL_Texture *spriteSheet = nullptr;
@@ -69,25 +76,26 @@ public:
 
     bool isFlipped;
 
-    SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *texture = nullptr);
+    // static void SetRenderer(SDL_Renderer *renderer);
+
+    SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet = nullptr);
     ~SpriteRenderer();
     void Update();
     void Draw();
     Component *Clone(GameObject *parent);
-
-    static SDL_Texture *LoadSpriteSheet(std::string path);
 };
 
 class AnimationClip {
-public:
-    std::string name;
-    bool loop = false, isPlaying = false;
-    float length = 0;
-
-    Vector2 spriteSize = Vector2(1, 1);
-
+private:
     SDL_Texture *spriteSheet;
     SDL_Rect currentSpriteRect;
+    std::string name;
+    float length = 0;
+
+public:
+    bool loop = false, isPlaying = false;
+
+    Vector2 spriteSize = Vector2(1, 1);
 
     int currentSprite = 0, startSprite = 0, endSprite = 0;
 
@@ -95,12 +103,14 @@ public:
 
     Event *onComplete = nullptr;
 
+
     AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale);
     ~AnimationClip();
 
+    std::string GetName();
     void AdvanceFrame();
     void Ready();
-    std::pair<SDL_Texture *, Vector2> GetCurrentSprite();
+    std::pair<SDL_Texture *, SDL_Rect > GetCurrentSpriteInfo();
 };
 
 class Animator : public Component {
@@ -145,29 +155,27 @@ public:
     void Update();
     void Draw();
 
+    std::string GetName();
+    
+    void AddComponent(Component *component);
+    
     template <typename T>
-    T *AddComponent() {
-        T *component = new T();
-        component->gameObject = this;
-        components.push_back(component);
-        return component;
-    }
-
-    template <typename T>
-    T *GetComponent() {
-        for (Component *component : components) {
-            T *t = dynamic_cast<T *>(component);
-            if (t != nullptr) {
-                return t;
-            }
-        }
-        return nullptr;
-    }
+    T* GetComponent();
 
     static GameObject *Instantiate(std::string name, const GameObject &origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale);
     static GameObject *Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale);
     static void Destroy(std::string name);
 };
+
+template <typename T>
+T* GameObject::GetComponent() {
+    for (auto &component : components) {
+        if (dynamic_cast<T *>(component)) {
+            return dynamic_cast<T *>(component);
+        }
+    }
+    return nullptr;
+}
 
 //Event
 class Event {
@@ -202,7 +210,7 @@ public:
     void AssignLogic(std::function<void()> logic);
     void RunLogic();
 
-    void AddGameObject(std::string name, GameObject *gameObject);
+    void AddGameObject(GameObject *gameObject);
     void RemoveGameObject(std::string name);
 
     void Load();
