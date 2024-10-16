@@ -20,7 +20,9 @@ public:
     Vector2 operator+(Vector2 v);
     Vector2 operator-(Vector2 v);
     Vector2 operator*(int f);
-
+    Vector2 operator/(int f);
+    Vector2 operator+=(Vector2 v);
+    
     int Magnitude();
     Vector2 Normalize();
     int Distance(Vector2 v);
@@ -65,9 +67,6 @@ public:
 SDL_Texture *LoadSpriteSheet(std::string path);
 
 class SpriteRenderer : public Component {
-private:
-    SDL_Renderer *renderer;
-
 public:
     SDL_Texture *spriteSheet = nullptr;
     SDL_Rect spriteRect;
@@ -76,7 +75,7 @@ public:
 
     // static void SetRenderer(SDL_Renderer *renderer);
 
-    SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet = nullptr);
+    SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet = nullptr);
     ~SpriteRenderer();
     void Update();
     void Draw();
@@ -242,6 +241,7 @@ public:
 
     void AddGameObject(GameObject *gameObject);
     void RemoveGameObject(std::string name);
+    GameObject *GetGameObject(std::string name);
 
     void AddScene(Scene *scene);
     void LoadScene(std::string sceneName);

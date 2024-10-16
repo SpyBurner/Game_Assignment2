@@ -31,6 +31,16 @@ Vector2 Vector2::operator*(int f) {
     return Vector2(x * f, y * f);
 }
 
+Vector2 Vector2::operator/(int f) {
+    return Vector2(x / f, y / f);
+}
+
+Vector2 Vector2::operator+=(Vector2 v) {
+    x += v.x;
+    y += v.y;
+    return *this;
+}
+
 int Vector2::Magnitude() {
     return std::sqrt(x * x + y * y);
 }
@@ -193,8 +203,7 @@ Component::~Component() {}
 //     SpriteRenderer::renderer = renderer;
 // }
 
-SpriteRenderer::SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
-    this->renderer = renderer;
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
     this->spriteSheet = spriteSheet;
 
     this->spriteRect = SDL_Rect();
@@ -202,6 +211,10 @@ SpriteRenderer::SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, V
     this->spriteRect.y = 0;
     this->spriteRect.w = (int)spriteSize.x;
     this->spriteRect.h = (int)spriteSize.y;
+
+    if (defaultSpriteSheet) {
+        this->spriteSheet = defaultSpriteSheet;
+    }
 }
 
 SpriteRenderer::~SpriteRenderer() {}
@@ -209,7 +222,7 @@ SpriteRenderer::~SpriteRenderer() {}
 void SpriteRenderer::Update() {}
 
 void SpriteRenderer::Draw() {
-    if (!renderer) {
+    if (!RENDERER) {
         throw "Renderer is null in SpriteRenderer::Draw()";
         return;
     }
@@ -226,11 +239,11 @@ void SpriteRenderer::Draw() {
 
     // Copy the sprite to the renderer
     // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
-    SDL_RenderCopyEx(renderer, spriteSheet, &spriteRect, &destRect, gameObject->transform.rotation, nullptr, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, gameObject->transform.rotation, nullptr, SDL_FLIP_NONE);
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
-    SpriteRenderer *newRenderer = new SpriteRenderer(parent, renderer, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
+    SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
 
     return newRenderer;
 }
@@ -511,6 +524,10 @@ void SceneManager::AddGameObject(GameObject *gameObject){
 
 void SceneManager::RemoveGameObject(std::string name){
     GameObjectManager::GetInstance()->RemoveGameObject(name);
+}
+
+GameObject *SceneManager::GetGameObject(std::string name){
+    return GameObjectManager::GetInstance()->GetGameObject(name);
 }
 
 void SceneManager::AddScene(Scene *scene) {

@@ -1,6 +1,7 @@
+#include "Global.hpp"
 #include "Game.hpp"
 #include "CustomClasses.hpp"
-#include "Global.hpp"
+#include "Physic2D.hpp"
 #include <iostream>
 
 Game::Game() {
@@ -70,6 +71,28 @@ void Game::objectInit() {
     // SceneManager::GetInstance()->LoadScene("Main");
     #pragma endregion
 
+    #pragma region TEST PHYSIC2D
+
+    Scene *mainScene = new Scene("Main");
+
+    GameObject *ball = new GameObject("Ball");
+    ball->transform.position = Vector2(0, 0);
+    ball->transform.scale = Vector2(10, 10);
+
+    ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), LoadSpriteSheet("Assets/default.png")));
+    
+    ball->AddComponent(new Animator(ball, {
+        AnimationClip("Roll", "Assets/soccer_ball.png", Vector2(15, 15), 1000, true, 1.0, 0, 1)
+    }));
+    ball->GetComponent<Animator>()->Play("Roll");
+    
+    ball->AddComponent(new Rigidbody2D(ball, 1, 0.2));
+    // ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(10, 10));  
+
+    mainScene->AddGameObject(ball);
+
+    SceneManager::GetInstance()->AddScene(mainScene);
+    #pragma endregion
 
 }
 
@@ -120,6 +143,8 @@ void Game::update() {
     // }
     //
     #pragma endregion
+
+     SceneManager::GetInstance()->GetGameObject("Ball")->transform.position;
 
     SceneManager::GetInstance()->Update();
 }
