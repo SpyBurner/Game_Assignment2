@@ -1,6 +1,6 @@
 #include "Game.hpp"
-#include "Global.hpp"
 #include "CustomClasses.hpp"
+#include "Global.hpp"
 #include <iostream>
 
 Game::Game() {
@@ -10,7 +10,7 @@ Game::Game() {
 Game::~Game() {
 }
 
-void Game::init(const char* title, int xpos, int ypos, int width, int height, bool fullscreen) {
+void Game::init(const char *title, int xpos, int ypos, int width, int height, bool fullscreen) {
     int flags = 0;
     if (fullscreen) {
         flags = SDL_WINDOW_FULLSCREEN;
@@ -40,32 +40,32 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, bo
     objectInit();
 }
 
-void dummy(){
+void dummy() {
     std::cout << "Dummy" << std::endl;
 }
+
+GameObject *player = new GameObject("Player");
 
 void Game::objectInit() {
     // Add your object initialisation here
 
     std::cout << "Object Initialisation..." << std::endl;
 
-    //Test scene
+    // Test scene
     Scene *main = new Scene("Main");
-    GameObject *player = new GameObject("Player");
-    player->transform.position = Vector2(100, 100);
+
+    player->transform.position = Vector2(300, 400);
+    player->transform.scale = Vector2(5, 5);
     player->AddComponent(new SpriteRenderer(player, renderer, Vector2(35, 44)));
 
-    SpriteRenderer* spriteRenderer = player->GetComponent<SpriteRenderer>();
-     spriteRenderer->spriteSheet = LoadSpriteSheet("Assets/default.png");
+    SpriteRenderer *spriteRenderer = player->GetComponent<SpriteRenderer>();
+    spriteRenderer->spriteSheet = LoadSpriteSheet("Assets/default.png");
 
-    // AnimationClip playerIdle = AnimationClip("Idle", "Assets/kirby_fall.png", Vector2(35, 44), 7, true, 2.0, 0, 14);
+    AnimationClip playerIdle = AnimationClip("Idle", "Assets/kirby_fall.png", Vector2(35, 44), 2000, true, 1.0, 0, 14);
     // playerIdle.onComplete->addHandler(dummy);
 
-    // player->AddComponent(new Animator(player, {playerIdle}));
-
-    // player->GetComponent<Animator>()->Play("Idle");
-
-    main->AddGameObject(player);
+    player->AddComponent(new Animator(player, {playerIdle}));
+    player->GetComponent<Animator>()->Play("Idle");
 
     SceneManager::GetInstance()->AddScene(main);
     SceneManager::GetInstance()->LoadScene("Main");
@@ -75,30 +75,46 @@ void Game::handleEvents() {
     SDL_Event event;
     SDL_PollEvent(&event);
     switch (event.type) {
-        case SDL_QUIT:
-            isRunning = false;
-            break;
-        default:
-            break;
+    case SDL_QUIT:
+        isRunning = false;
+        break;
+    default:
+        break;
     }
 }
 
+
+float lastSpawnTime = 0;
+float spawnCooldown = 3000;
+int spawnCount = 0;
+
 void Game::update() {
     // Game logic updates go here
+
+    // TEST INSTANTIATE
+    if (SDL_GetTicks() - lastSpawnTime >= spawnCooldown) {
+        GameObject *newObject = GameObject::Instantiate("Player" + std::to_string(spawnCount), *player, player->transform.position + Vector2(100, 0), Vector2(0, 0), Vector2(5, 5));
+        lastSpawnTime = SDL_GetTicks();
+        spawnCount++;
+
+    }
+    //
+
     SceneManager::GetInstance()->Update();
 }
 
 void Game::render() {
     SDL_RenderClear(renderer);
     // Add your rendering stuff here
+
     SceneManager::GetInstance()->Draw();
     SDL_RenderPresent(renderer);
 }
 
 void Game::clean() {
     delete SceneManager::GetInstance();
-    
-    for (auto &texture: TEXTURES) {
+
+    for (auto &texture : TEXTURES) {
         SDL_DestroyTexture(texture);
     }
     TEXTURES.clear();

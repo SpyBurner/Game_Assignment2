@@ -89,6 +89,8 @@ private:
     SDL_Rect currentSpriteRect;
     std::string name;
     float length = 0;
+    
+    //Only used in cloning, by another AnimationClip
 
 public:
     bool loop = false, isPlaying = false;
@@ -100,8 +102,10 @@ public:
     float speedScale = 0, animCooldown = 0, lastFrameTime = 0, startTime = 0;
 
     // Event *onComplete = nullptr;
-
+    AnimationClip();
     AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale, int startSprite, int endSprite);
+    AnimationClip(const AnimationClip &clip);
+    
     ~AnimationClip();
 
     std::string GetName();
@@ -234,6 +238,9 @@ public:
     static SceneManager *GetInstance();
 
     void RunLogic();
+
+    void AddGameObject(GameObject *gameObject);
+    void RemoveGameObject(std::string name);
 
     void AddScene(Scene *scene);
     void LoadScene(std::string sceneName);

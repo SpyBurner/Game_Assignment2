@@ -1,10 +1,8 @@
+#include "Game.hpp"
+#include "Global.hpp"
+#include <SDL2/SDL.h>
 #include <iostream>
 
-#include "Game.hpp"
-#include <SDL2/SDL.h>
-
-
-const int WIDTH = 800, HEIGHT = 600;
 
 Game *game = nullptr;
 
@@ -17,6 +15,8 @@ int main(int argc, char *argv[]) {
         game->handleEvents();
         game->update();
         game->render();
+        
+        SDL_Delay(1000 / FPS);
     }
 
     game->clean();

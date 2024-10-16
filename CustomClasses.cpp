@@ -10,6 +10,7 @@ SceneManager *SceneManager::instance = nullptr;
 
 SDL_Renderer *RENDERER = nullptr;
 std::vector<SDL_Texture *> TEXTURES;
+
 //
 
 #pragma region Vector2
@@ -155,7 +156,7 @@ std::string GameObject::GetName() {
 
 void GameObject::AddComponent(Component *component) {
     components.push_back(component);
-}
+ }
 
 GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale) {
     return Instantiate(name, origin, Vector2(position.first, position.second), Vector2(rotation.first, rotation.second), Vector2(scale.first, scale.second));
@@ -164,8 +165,9 @@ GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, 
 GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale) {
     GameObject *newObject = new GameObject(name);
 
-    // Deep copy transform
-    newObject->transform = origin.transform;
+    newObject->transform.position = position;
+    newObject->transform.rotation = rotation;
+    newObject->transform.scale = scale;
 
     // Deep copy components
     for (auto &component : origin.components) {
@@ -232,7 +234,6 @@ void SpriteRenderer::Draw() {
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
     SpriteRenderer *newRenderer = new SpriteRenderer(parent, renderer, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
-    newRenderer->spriteRect = spriteRect;
 
     return newRenderer;
 }
@@ -257,6 +258,9 @@ SDL_Texture *LoadSpriteSheet(std::string path) {
 
 #pragma region Animator
 // AnimationClip class implementation
+
+AnimationClip::AnimationClip(){}
+
 AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteSize,
                              float length, bool loop, float speedScale, int startSprite, int endSprite) {
     // Stats setup
@@ -268,7 +272,7 @@ AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteS
 
     this->startSprite = startSprite;
     this->endSprite = endSprite;
-    
+
     currentSprite = startSprite;
     isPlaying = false; // Initialize isPlaying to false
 
@@ -285,6 +289,32 @@ AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteS
     // onComplete = new Event();
 }
 
+AnimationClip::AnimationClip(const AnimationClip &clip){
+    name = clip.name;
+    spriteSize = clip.spriteSize;
+    length = clip.length;
+    loop = clip.loop;
+    speedScale = clip.speedScale;
+
+    startSprite = clip.startSprite;
+    endSprite = clip.endSprite;
+
+    currentSprite = clip.startSprite;
+    isPlaying = false; // Initialize isPlaying to false
+
+    // Sprite setup
+    spriteSheet = clip.spriteSheet;
+
+    currentSpriteRect.x = currentSprite * (int)spriteSize.x;
+    currentSpriteRect.y = 0; // Assuming the sprites are in a single row
+    currentSpriteRect.w = (int)spriteSize.x;
+    currentSpriteRect.h = (int)spriteSize.y;
+    
+    animCooldown = clip.animCooldown; // Calculate animation cooldown based on length and number of frames 
+
+    // newAnimClip->onComplete = new Event();
+}
+
 AnimationClip::~AnimationClip() {
     // if (onComplete != nullptr)
     //     delete onComplete;
@@ -299,7 +329,7 @@ void AnimationClip::AdvanceFrame() {
         return;
 
     float currentTime = SDL_GetTicks();
-    if (currentTime - lastFrameTime <= animCooldown)
+    if (currentTime - lastFrameTime <= animCooldown / speedScale)
         return;
 
     lastFrameTime = currentTime;
@@ -308,8 +338,6 @@ void AnimationClip::AdvanceFrame() {
     if (currentSprite >= endSprite) {
         if (loop) {
             currentSprite = startSprite;
-            currentSpriteRect.x = currentSprite * spriteSize.x;
-            currentSpriteRect.y = spriteSize.y;
         } else {
             currentSprite = endSprite;
             isPlaying = false;
@@ -318,6 +346,9 @@ void AnimationClip::AdvanceFrame() {
             // }
         }
     }
+    
+    currentSpriteRect.x = currentSprite * spriteSize.x;
+    currentSpriteRect.y = 0;
 }
 
 void AnimationClip::Ready() {
@@ -336,7 +367,14 @@ Animator::Animator(GameObject *gameObject, std::vector<AnimationClip> clips) : C
     for (auto &clip : clips) {
         this->clips.insert({clip.GetName(), clip});
     }
-    currentClip = &(clips[0]);
+    currentClip = &(this->clips.begin()->second);
+
+    if (gameObject->GetComponent<SpriteRenderer>()){
+        std::pair<SDL_Texture *, SDL_Rect> spriteInfo = currentClip->GetCurrentSpriteInfo();
+        gameObject->GetComponent<SpriteRenderer>()->spriteSheet = spriteInfo.first;
+        gameObject->GetComponent<SpriteRenderer>()->spriteRect = spriteInfo.second;
+    }
+
 
     currentClip->Ready();
 }
@@ -349,7 +387,7 @@ void Animator::Update() {
     // Advance the current clip's frame
     if (currentClip)
         currentClip->AdvanceFrame();
-    
+
     // Update the SpriteRenderer with the current sprite
     std::pair<SDL_Texture *, SDL_Rect> sheetInfo = currentClip->GetCurrentSpriteInfo();
     SpriteRenderer *renderer = gameObject->GetComponent<SpriteRenderer>();
@@ -384,7 +422,7 @@ AnimationClip *Animator::GetClip(std::string name) {
 std::vector<AnimationClip> Animator::GetAllClips() {
     std::vector<AnimationClip> clipList;
     for (auto &pair : clips) {
-        clipList.push_back(pair.second);
+        clipList.push_back(AnimationClip(pair.second));
     }
     return clipList;
 }
@@ -463,10 +501,19 @@ SceneManager *SceneManager::GetInstance() {
     return instance;
 }
 
+
 void SceneManager::RunLogic() {
     if (currentScene) {
         currentScene->RunLogic();
     }
+}
+
+void SceneManager::AddGameObject(GameObject *gameObject){
+    GameObjectManager::GetInstance()->AddGameObject(gameObject);
+}
+
+void SceneManager::RemoveGameObject(std::string name){
+    GameObjectManager::GetInstance()->RemoveGameObject(name);
 }
 
 void SceneManager::AddScene(Scene *scene) {
