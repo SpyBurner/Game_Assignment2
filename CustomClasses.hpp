@@ -101,7 +101,8 @@ public:
 
     float speedScale = 0, animCooldown = 0, lastFrameTime = 0, startTime = 0;
 
-    // Event *onComplete = nullptr;
+    Event *onComplete = nullptr;
+    
     AnimationClip();
     AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale, int startSprite, int endSprite);
     AnimationClip(const AnimationClip &clip);

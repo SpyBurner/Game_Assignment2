@@ -59,13 +59,11 @@ void Game::objectInit() {
     player->AddComponent(new SpriteRenderer(player, renderer, Vector2(35, 44)));
 
     SpriteRenderer *spriteRenderer = player->GetComponent<SpriteRenderer>();
-    spriteRenderer->spriteSheet = LoadSpriteSheet("Assets/default.png");
 
-    AnimationClip playerIdle = AnimationClip("Idle", "Assets/kirby_fall.png", Vector2(35, 44), 2000, true, 1.0, 0, 14);
-    // playerIdle.onComplete->addHandler(dummy);
-
-    player->AddComponent(new Animator(player, {playerIdle}));
-    player->GetComponent<Animator>()->Play("Idle");
+    AnimationClip playerIdle = AnimationClip("Idle", "Assets/kirby_fall.png", Vector2(35, 44), 2000, false, 1.0, 0, 14);
+    AnimationClip playerFloat = AnimationClip("Float", "Assets/kirby_float.png", Vector2(35, 44), 2000, false, 1.0, 0, 3);
+    
+    player->AddComponent(new Animator(player, {playerIdle, playerFloat}));
 
     SceneManager::GetInstance()->AddScene(main);
     SceneManager::GetInstance()->LoadScene("Main");
@@ -96,10 +94,24 @@ void Game::update() {
     // TEST INSTANTIATE
     if (SDL_GetTicks() - lastSpawnTime >= spawnCooldown) {
         GameObject *newObject = GameObject::Instantiate("Player" + std::to_string(spawnCount), 
-        *player, previousObject->transform.position + Vector2(10, 0), previousObject->transform.rotation+45, Vector2(5, 5));
+        *player, previousObject->transform.position + Vector2(30, 0), 0, Vector2(5, 5));
         lastSpawnTime = SDL_GetTicks();
         previousObject = newObject;
         spawnCount++;
+
+        newObject->GetComponent<Animator>()->GetClip("Idle")->onComplete->addHandler(
+            [newObject]() {
+                newObject->GetComponent<Animator>()->Play("Float");
+            }
+        );
+
+        newObject->GetComponent<Animator>()->GetClip("Float")->onComplete->addHandler(
+            [newObject]() {
+                newObject->GetComponent<Animator>()->Play("Idle");
+            }
+        );
+
+        newObject->GetComponent<Animator>()->Play("Idle");
     }
     //
 

@@ -283,7 +283,7 @@ AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteS
 
     animCooldown = length / (endSprite - startSprite); // Calculate animation cooldown based on length and number of frames
 
-    // onComplete = new Event();
+    onComplete = new Event();
 }
 
 AnimationClip::AnimationClip(const AnimationClip &clip){
@@ -309,7 +309,7 @@ AnimationClip::AnimationClip(const AnimationClip &clip){
     
     animCooldown = clip.animCooldown; // Calculate animation cooldown based on length and number of frames 
 
-    // newAnimClip->onComplete = new Event();
+    onComplete = new Event();
 }
 
 AnimationClip::~AnimationClip() {
@@ -332,15 +332,15 @@ void AnimationClip::AdvanceFrame() {
     lastFrameTime = currentTime;
     currentSprite++;
 
-    if (currentSprite >= endSprite) {
+    if (currentSprite > endSprite) {
         if (loop) {
             currentSprite = startSprite;
         } else {
             currentSprite = endSprite;
             isPlaying = false;
-            // if (onComplete != nullptr) {
-            //     onComplete->raise();
-            // }
+            if (onComplete != nullptr) {
+                onComplete->raise();
+            }
         }
     }
     
