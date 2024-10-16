@@ -1,11 +1,15 @@
 #include "CustomClasses.hpp"
+#include "Global.hpp"
 #include <SDL2/SDL_image.h>
 #include <cmath>
 #include <iostream>
 
-// INIT
+// INIT STATIC
 GameObjectManager *GameObjectManager::instance = nullptr;
 SceneManager *SceneManager::instance = nullptr;
+
+SDL_Renderer *RENDERER = nullptr;
+std::vector<SDL_Texture *> TEXTURES;
 //
 
 #pragma region Vector2
@@ -233,7 +237,7 @@ Component *SpriteRenderer::Clone(GameObject *parent) {
     return newRenderer;
 }
 
-SDL_Texture *LoadSpriteSheet(std::string &path) {
+SDL_Texture *LoadSpriteSheet(std::string path) {
     SDL_Surface *surface = IMG_Load(path.c_str());
     if (!surface) {
         std::cerr << "Failed to load image: " << path << std::endl;
@@ -241,6 +245,7 @@ SDL_Texture *LoadSpriteSheet(std::string &path) {
     }
 
     SDL_Texture *texture = SDL_CreateTextureFromSurface(RENDERER, surface);
+    std::string error = SDL_GetError();
     SDL_FreeSurface(surface);
 
     TEXTURES.push_back(texture);
@@ -333,9 +338,6 @@ Animator::Animator(GameObject *gameObject, std::vector<AnimationClip> clips) : C
     }
     currentClip = &(clips[0]);
 
-    gameObject->GetComponent<SpriteRenderer>()->spriteSheet = currentClip->GetCurrentSpriteInfo().first;
-    gameObject->GetComponent<SpriteRenderer>()->spriteRect = currentClip->GetCurrentSpriteInfo().second;
-
     currentClip->Ready();
 }
 
@@ -344,8 +346,11 @@ Animator::~Animator() {
 }
 
 void Animator::Update() {
+    // Advance the current clip's frame
     if (currentClip)
         currentClip->AdvanceFrame();
+    
+    // Update the SpriteRenderer with the current sprite
     std::pair<SDL_Texture *, SDL_Rect> sheetInfo = currentClip->GetCurrentSpriteInfo();
     SpriteRenderer *renderer = gameObject->GetComponent<SpriteRenderer>();
     if (renderer) {

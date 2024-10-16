@@ -1,4 +1,5 @@
 #include "Game.hpp"
+#include "Global.hpp"
 #include "CustomClasses.hpp"
 #include <iostream>
 
@@ -29,6 +30,8 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, bo
             std::cout << "Renderer created..." << std::endl;
         }
 
+        RENDERER = renderer;
+
         isRunning = true;
     } else {
         isRunning = false;
@@ -52,11 +55,13 @@ void Game::objectInit() {
     player->transform.position = Vector2(100, 100);
     player->AddComponent(new SpriteRenderer(player, renderer, Vector2(35, 44)));
 
-    AnimationClip playerIdle = AnimationClip("Idle", "Assets/kirby_fall.png", Vector2(35, 44), 7, true, 2.0, 0, 14);
+    SpriteRenderer* spriteRenderer = player->GetComponent<SpriteRenderer>();
+     spriteRenderer->spriteSheet = LoadSpriteSheet("Assets/default.png");
+
+    // AnimationClip playerIdle = AnimationClip("Idle", "Assets/kirby_fall.png", Vector2(35, 44), 7, true, 2.0, 0, 14);
     // playerIdle.onComplete->addHandler(dummy);
 
-    player->AddComponent(new Animator(player, {playerIdle}));
-
+    // player->AddComponent(new Animator(player, {playerIdle}));
 
     // player->GetComponent<Animator>()->Play("Idle");
 

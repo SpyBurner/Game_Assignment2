@@ -12,9 +12,6 @@
 
 class GameObject;
 class Event;
-
-static SDL_Renderer *RENDERER = nullptr;
-static std::vector<SDL_Texture *> TEXTURES;
 class Vector2 {
 public:
     int x, y;
@@ -65,7 +62,7 @@ public:
     virtual Component *Clone(GameObject *parent) = 0;
 };
 
-SDL_Texture *LoadSpriteSheet(std::string &path);
+SDL_Texture *LoadSpriteSheet(std::string path);
 
 class SpriteRenderer : public Component {
 private:
