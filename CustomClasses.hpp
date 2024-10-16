@@ -138,9 +138,10 @@ public:
 
 class Transform {
 public:
-    Vector2 position, rotation, scale;
+    float rotation; //Only for the Z axis
+    Vector2 position, scale;
     Transform();
-    Transform(Vector2 position, Vector2 rotation, Vector2 scale);
+    Transform(Vector2 position, float rotation, Vector2 scale);
 };
 
 class GameObject {
@@ -163,8 +164,7 @@ public:
     template <typename T>
     T *GetComponent();
 
-    static GameObject *Instantiate(std::string name, const GameObject &origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale);
-    static GameObject *Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale);
+    static GameObject *Instantiate(std::string name, const GameObject &origin, Vector2 position, float rotation, Vector2 scale);
     static void Destroy(std::string name);
 };
 

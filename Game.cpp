@@ -54,7 +54,7 @@ void Game::objectInit() {
     // Test scene
     Scene *main = new Scene("Main");
 
-    player->transform.position = Vector2(300, 400);
+    player->transform.position = Vector2(150, 200);
     player->transform.scale = Vector2(5, 5);
     player->AddComponent(new SpriteRenderer(player, renderer, Vector2(35, 44)));
 
@@ -84,19 +84,22 @@ void Game::handleEvents() {
 }
 
 
-float lastSpawnTime = 0;
+float lastSpawnTime = -3000;
 float spawnCooldown = 3000;
 int spawnCount = 0;
+
+GameObject* previousObject = player;
 
 void Game::update() {
     // Game logic updates go here
 
     // TEST INSTANTIATE
     if (SDL_GetTicks() - lastSpawnTime >= spawnCooldown) {
-        GameObject *newObject = GameObject::Instantiate("Player" + std::to_string(spawnCount), *player, player->transform.position + Vector2(100, 0), Vector2(0, 0), Vector2(5, 5));
+        GameObject *newObject = GameObject::Instantiate("Player" + std::to_string(spawnCount), 
+        *player, previousObject->transform.position + Vector2(10, 0), previousObject->transform.rotation+45, Vector2(5, 5));
         lastSpawnTime = SDL_GetTicks();
+        previousObject = newObject;
         spawnCount++;
-
     }
     //
 

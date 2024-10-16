@@ -117,8 +117,8 @@ void GameObjectManager::Draw() {
 
 #pragma region GameObject
 // GameObject class implementation
-Transform::Transform() : position(Vector2(0, 0)), rotation(Vector2(0, 0)), scale(Vector2(1, 1)) {}
-Transform::Transform(Vector2 position, Vector2 rotation, Vector2 scale) {
+Transform::Transform() : position(Vector2(0, 0)), rotation(0), scale(Vector2(1, 1)) {}
+Transform::Transform(Vector2 position, float rotation, Vector2 scale) {
     this->position = position;
     this->rotation = rotation;
     this->scale = scale;
@@ -158,11 +158,7 @@ void GameObject::AddComponent(Component *component) {
     components.push_back(component);
  }
 
-GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale) {
-    return Instantiate(name, origin, Vector2(position.first, position.second), Vector2(rotation.first, rotation.second), Vector2(scale.first, scale.second));
-}
-
-GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale) {
+GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, float rotation, Vector2 scale) {
     GameObject *newObject = new GameObject(name);
 
     newObject->transform.position = position;
@@ -229,7 +225,8 @@ void SpriteRenderer::Draw() {
     destRect.h = spriteRect.h * gameObject->transform.scale.y;
 
     // Copy the sprite to the renderer
-    SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
+    // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
+    SDL_RenderCopyEx(renderer, spriteSheet, &spriteRect, &destRect, gameObject->transform.rotation, nullptr, SDL_FLIP_NONE);
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
