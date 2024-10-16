@@ -6,16 +6,18 @@ Rigidbody2D::Rigidbody2D(GameObject *parent, float mass, float drag) : Component
     this->mass = mass;
     this->velocity = Vector2(0, 0);
     this->acceleration = Vector2(0, 0);
-    this->drag = 0.0f;
+    this->drag = drag;
 }
 
 Rigidbody2D::~Rigidbody2D() {}
 
 void Rigidbody2D::Update() {
-    this->acceleration = this->acceleration * drag * -1;
+    this->acceleration = this->acceleration * (1 - this->drag);
     this->velocity += this->acceleration;
 
-    this->velocity = this->velocity * drag * -1;
+    this->velocity = this->velocity * (1 - this->drag);
+
+    std::cout<<this->velocity.x<<", "<<this->velocity.y<<std::endl;
 
     this->gameObject->transform.position += this->velocity;
 }

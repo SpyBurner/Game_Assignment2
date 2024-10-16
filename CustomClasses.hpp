@@ -14,19 +14,19 @@ class GameObject;
 class Event;
 class Vector2 {
 public:
-    int x, y;
+    float x, y;
     Vector2();
-    Vector2(int x, int y);
+    Vector2(float x, float y);
     Vector2 operator+(Vector2 v);
     Vector2 operator-(Vector2 v);
-    Vector2 operator*(int f);
-    Vector2 operator/(int f);
+    Vector2 operator*(float f);
+    Vector2 operator/(float f);
     Vector2 operator+=(Vector2 v);
     
-    int Magnitude();
+    float Magnitude();
     Vector2 Normalize();
-    int Distance(Vector2 v);
-    static int Dot(Vector2 v1, Vector2 v2);
+    float Distance(Vector2 v);
+    static float Dot(Vector2 v1, Vector2 v2);
 };
 
 /*Singleton manager for GameObjects, automatic memory management
@@ -130,6 +130,7 @@ public:
     void Play(std::string name);
     void Stop();
 
+    AnimationClip *GetCurrentClip();
     AnimationClip *GetClip(std::string name);
     std::vector<AnimationClip> GetAllClips();
 

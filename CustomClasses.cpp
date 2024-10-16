@@ -17,7 +17,7 @@ std::vector<SDL_Texture *> TEXTURES;
 // Vector2 class implementation
 Vector2::Vector2() : x(0), y(0) {}
 
-Vector2::Vector2(int x, int y) : x(x), y(y) {}
+Vector2::Vector2(float x, float y) : x(x), y(y) {}
 
 Vector2 Vector2::operator+(Vector2 v) {
     return Vector2(x + v.x, y + v.y);
@@ -27,11 +27,11 @@ Vector2 Vector2::operator-(Vector2 v) {
     return Vector2(x - v.x, y - v.y);
 }
 
-Vector2 Vector2::operator*(int f) {
+Vector2 Vector2::operator*(float f) {
     return Vector2(x * f, y * f);
 }
 
-Vector2 Vector2::operator/(int f) {
+Vector2 Vector2::operator/(float f) {
     return Vector2(x / f, y / f);
 }
 
@@ -41,20 +41,20 @@ Vector2 Vector2::operator+=(Vector2 v) {
     return *this;
 }
 
-int Vector2::Magnitude() {
+float Vector2::Magnitude() {
     return std::sqrt(x * x + y * y);
 }
 
 Vector2 Vector2::Normalize() {
-    int magnitude = Magnitude();
+    float magnitude = Magnitude();
     return Vector2(x / magnitude, y / magnitude);
 }
 
-int Vector2::Distance(Vector2 v) {
+float Vector2::Distance(Vector2 v) {
     return std::sqrt((v.x - x) * (v.x - x) + (v.y - y) * (v.y - y));
 }
 
-int Vector2::Dot(Vector2 v1, Vector2 v2) {
+float Vector2::Dot(Vector2 v1, Vector2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
 }
 
@@ -419,6 +419,10 @@ void Animator::Play(std::string name) {
 
 void Animator::Stop() {
     currentClip->isPlaying = false;
+}
+
+AnimationClip * Animator::GetCurrentClip(){
+    return currentClip;
 }
 
 AnimationClip *Animator::GetClip(std::string name) {

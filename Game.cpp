@@ -2,6 +2,7 @@
 #include "Game.hpp"
 #include "CustomClasses.hpp"
 #include "Physic2D.hpp"
+#include "Helper.hpp"
 #include <iostream>
 
 Game::Game() {
@@ -41,10 +42,6 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
     objectInit();
 }
 
-void dummy() {
-    std::cout << "Dummy" << std::endl;
-}
-
 GameObject *player = new GameObject("Player");
 
 void Game::objectInit() {
@@ -76,7 +73,7 @@ void Game::objectInit() {
     Scene *mainScene = new Scene("Main");
 
     GameObject *ball = new GameObject("Ball");
-    ball->transform.position = Vector2(0, 0);
+    ball->transform.position = Vector2(50, 0);
     ball->transform.scale = Vector2(10, 10);
 
     ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), LoadSpriteSheet("Assets/default.png")));
@@ -86,12 +83,16 @@ void Game::objectInit() {
     }));
     ball->GetComponent<Animator>()->Play("Roll");
     
-    ball->AddComponent(new Rigidbody2D(ball, 1, 0.2));
-    // ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(10, 10));  
+    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025));
+    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(50, 50));
+
+    ball->AddComponent(new RollSpeedController(ball));
+    ball->AddComponent(new StayInBounds(ball, true));
 
     mainScene->AddGameObject(ball);
 
     SceneManager::GetInstance()->AddScene(mainScene);
+    SceneManager::GetInstance()->LoadScene("Main");
     #pragma endregion
 
 }
@@ -144,14 +145,17 @@ void Game::update() {
     //
     #pragma endregion
 
-     SceneManager::GetInstance()->GetGameObject("Ball")->transform.position;
+    GameObject *ball = SceneManager::GetInstance()->GetGameObject("Ball");
+
+    Vector2 pos = ball->transform.position;
+    // ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(.01, .01));
 
     SceneManager::GetInstance()->Update();
 }
 
 void Game::render() {
     SDL_RenderClear(renderer);
-    // Add your rendering stuff here
+    // Add your rend☺ering stuff here
 
     SceneManager::GetInstance()->Draw();
     SDL_RenderPresent(renderer);
