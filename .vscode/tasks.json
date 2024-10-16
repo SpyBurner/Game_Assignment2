@@ -6,10 +6,20 @@
             "command": "C:\\MinGW\\bin\\g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
+                "-g", // Add debug information
+                "-I",
+                "src/include",
+                "-L",
+                "src/lib",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "${fileDirname}\\main.cpp",
+                "${fileDirname}\\Game.cpp",
+                "${fileDirname}\\CustomClasses.cpp",
+                "-lmingw32",
+                "-lSDL2main",
+                "-lSDL2",
+                "-lSDL2_image"
             ],
             "options": {
                 "cwd": "${fileDirname}"

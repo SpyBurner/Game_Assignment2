@@ -4,29 +4,30 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
+#include <functional>
 #include <map>
 #include <utility>
 #include <vector>
-#include <functional>
+
 
 class GameObject;
 class Event;
 
 static SDL_Renderer *RENDERER = nullptr;
-
+static std::vector<SDL_Texture *> TEXTURES;
 class Vector2 {
 public:
-    float x, y;
+    int x, y;
     Vector2();
-    Vector2(float x, float y);
+    Vector2(int x, int y);
     Vector2 operator+(Vector2 v);
     Vector2 operator-(Vector2 v);
-    Vector2 operator*(float f);
+    Vector2 operator*(int f);
 
-    float Magnitude();
+    int Magnitude();
     Vector2 Normalize();
-    float Distance(Vector2 v);
-    static float Dot(Vector2 v1, Vector2 v2);
+    int Distance(Vector2 v);
+    static int Dot(Vector2 v1, Vector2 v2);
 };
 
 /*Singleton manager for GameObjects, automatic memory management
@@ -101,16 +102,15 @@ public:
 
     float speedScale = 0, animCooldown = 0, lastFrameTime = 0, startTime = 0;
 
-    Event *onComplete = nullptr;
+    // Event *onComplete = nullptr;
 
-
-    AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale);
+    AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale, int startSprite, int endSprite);
     ~AnimationClip();
 
     std::string GetName();
     void AdvanceFrame();
     void Ready();
-    std::pair<SDL_Texture *, SDL_Rect > GetCurrentSpriteInfo();
+    std::pair<SDL_Texture *, SDL_Rect> GetCurrentSpriteInfo();
 };
 
 class Animator : public Component {
@@ -122,7 +122,7 @@ public:
     Animator(GameObject *gameObject, std::vector<AnimationClip> clips);
     ~Animator();
 
-    //Update the SpriteRenderer with the current sprite
+    // Update the SpriteRenderer with the current sprite
     void Update();
     void Draw();
 
@@ -132,7 +132,7 @@ public:
     AnimationClip *GetClip(std::string name);
     std::vector<AnimationClip> GetAllClips();
 
-    Component* Clone(GameObject *parent);
+    Component *Clone(GameObject *parent);
 };
 
 class Transform {
@@ -156,11 +156,11 @@ public:
     void Draw();
 
     std::string GetName();
-    
+
     void AddComponent(Component *component);
-    
+
     template <typename T>
-    T* GetComponent();
+    T *GetComponent();
 
     static GameObject *Instantiate(std::string name, const GameObject &origin, std::pair<float, float> position, std::pair<float, float> rotation, std::pair<float, float> scale);
     static GameObject *Instantiate(std::string name, const GameObject &origin, Vector2 position, Vector2 rotation, Vector2 scale);
@@ -168,7 +168,7 @@ public:
 };
 
 template <typename T>
-T* GameObject::GetComponent() {
+T *GameObject::GetComponent() {
     for (auto &component : components) {
         if (dynamic_cast<T *>(component)) {
             return dynamic_cast<T *>(component);
@@ -177,17 +177,20 @@ T* GameObject::GetComponent() {
     return nullptr;
 }
 
-//Event
+// Event
 class Event {
 public:
     using Handler = std::function<void()>;
+
+    Event() {}
+    ~Event() { handlers.clear(); }
 
     void addHandler(Handler handler) {
         handlers.push_back(handler);
     }
 
     void raise() {
-        for (auto& handler : handlers) {
+        for (auto &handler : handlers) {
             handler();
         }
     }
@@ -196,13 +199,14 @@ private:
     std::vector<Handler> handlers;
 };
 
-//More like a template for the GameObjectManager
-class Scene{
+// More like a template for the GameObjectManager
+class Scene {
 private:
     std::map<std::string, GameObject *> gameObjects;
     std::string name;
 
     std::function<void()> logic;
+
 public:
     Scene(std::string name);
     ~Scene();
@@ -218,16 +222,17 @@ public:
     std::string GetName();
 };
 
-//Wrapper for all, including GameObjectManager
-//Singleton
-class SceneManager{
+// Wrapper for all, including GameObjectManager
+// Singleton
+class SceneManager {
 private:
     Scene *currentScene;
     SceneManager();
     static SceneManager *instance;
 
     std::map<std::string, Scene *> scenes;
-public: 
+
+public:
     ~SceneManager();
     static SceneManager *GetInstance();
 
@@ -235,12 +240,10 @@ public:
 
     void AddScene(Scene *scene);
     void LoadScene(std::string sceneName);
-    Scene* GetCurrentScene();
-
+    Scene *GetCurrentScene();
 
     void Update();
     void Draw();
 };
 
 #endif
-
