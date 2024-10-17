@@ -83,7 +83,7 @@ void Game::objectInit() {
     ball->GetComponent<Animator>()->Play("Roll");
 
     ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, 0.9));
-    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(50, 0));
+    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(50, 50));
 
     ball->AddComponent(new RollSpeedController(ball));
     ball->AddComponent(new StayInBounds(ball, false));
@@ -204,7 +204,7 @@ void Game::update() {
     Vector2 pos = ball->transform.position;
     Rigidbody2D *rigidbody = ball->GetComponent<Rigidbody2D>();
     // rigidbody->AddForce(Vector2(sin(SDL_GetTicks() / 1000.0), sin(SDL_GetTicks() / 1000.0 + 1 / 2 * 3.14)).Normalize() * 10);
-    // rigidbody->AddForce(Vector2(2, 0));
+    rigidbody->AddForce(Vector2(2, 0));
 
     // std::cout << "Ball Position: " << pos.x << ", " << pos.y << std::endl;
 

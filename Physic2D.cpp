@@ -209,31 +209,29 @@ Vector2 BoxCollider2D::GetNormal(Vector2 point) {
     Vector2 boxMin = this->gameObject->transform.position - this->size / 2 + this->offset;
     Vector2 boxMax = this->gameObject->transform.position + this->size / 2 + this->offset;
 
-    if (point.x < boxMin.x) {
-        return Vector2(-1, 0);
+    // Calculate distances to each side of the box
+    float leftDist = point.x - boxMin.x;
+    float rightDist = boxMax.x - point.x;
+    float bottomDist = point.y - boxMin.y;
+    float topDist = boxMax.y - point.y;
+
+    // Find the minimum distance to determine the closest side
+    float minDist = std::min(leftDist, std::min(rightDist, std::min(bottomDist, topDist)));
+
+    if (minDist == leftDist) {
+        return Vector2(-1, 0); // Left side
     }
-    if (point.x > boxMax.x) {
-        return Vector2(1, 0);
+    if (minDist == rightDist) {
+        return Vector2(1, 0); // Right side
     }
-    if (point.y < boxMin.y) {
-        return Vector2(0, -1);
+    if (minDist == bottomDist) {
+        return Vector2(0, -1); // Bottom side
     }
-    if (point.y > boxMax.y) {
-        return Vector2(0, 1);
+    if (minDist == topDist) {
+        return Vector2(0, 1); // Top side
     }
 
-    // Determine the normal based on the box center
-    Vector2 boxCenter = (boxMin + boxMax) / 2;
-    Vector2 direction = (point - boxCenter).Normalize();
-
-    // return direction;
-
-    if (direction.x * direction.x > direction.y * direction.y) {
-        return Vector2(direction.x > 0 ? 1 : -1, 0);
-    } else {
-        return Vector2(0, direction.y > 0 ? 1 : -1);
-    }
-
+    // Fallback (should not reach here)
     return Vector2(0, 0);
 }
 
