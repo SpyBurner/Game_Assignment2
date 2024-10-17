@@ -9,11 +9,10 @@
 #include <utility>
 #include <vector>
 
-
 class GameObject;
 
 // Event
-template<typename... Args>
+template <typename... Args>
 class Event {
 public:
     using Handler = std::function<void(Args...)>;
@@ -36,7 +35,7 @@ private:
 };
 
 // Specialization for no arguments
-template<>
+template <>
 class Event<> {
 public:
     using Handler = std::function<void()>;
@@ -58,7 +57,6 @@ private:
     std::vector<Handler> handlers;
 };
 
-
 class Vector2 {
 public:
     float x, y;
@@ -67,10 +65,10 @@ public:
     Vector2 operator+(Vector2 v);
     Vector2 operator-(Vector2 v);
     Vector2 operator*(float f);
-    float   operator*(Vector2 v);
+    float operator*(Vector2 v);
     Vector2 operator/(float f);
     Vector2 operator+=(Vector2 v);
-    
+
     float Magnitude();
     Vector2 Normalize();
     float Distance(Vector2 v);
@@ -142,8 +140,8 @@ private:
     SDL_Rect currentSpriteRect;
     std::string name;
     float length = 0;
-    
-    //Only used in cloning, by another AnimationClip
+
+    // Only used in cloning, by another AnimationClip
 
 public:
     bool loop = false, isPlaying = false;
@@ -155,11 +153,11 @@ public:
     float speedScale = 0, animCooldown = 0, lastFrameTime = 0, startTime = 0;
 
     Event<> *onComplete = nullptr;
-    
+
     AnimationClip();
     AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale, int startSprite, int endSprite);
     AnimationClip(const AnimationClip &clip);
-    
+
     ~AnimationClip();
 
     std::string GetName();
@@ -193,7 +191,7 @@ public:
 
 class Transform {
 public:
-    float rotation; //Only for the Z axis
+    float rotation; // Only for the Z axis
     Vector2 position, scale;
     Transform();
     Transform(Vector2 position, float rotation, Vector2 scale);
@@ -214,7 +212,7 @@ public:
 
     std::string GetName();
 
-    void AddComponent(Component *component);
+    Component *AddComponent(Component *component);
 
     template <typename T>
     T *GetComponent();
@@ -232,7 +230,6 @@ T *GameObject::GetComponent() {
     }
     return nullptr;
 }
-
 
 // More like a template for the GameObjectManager
 class Scene {

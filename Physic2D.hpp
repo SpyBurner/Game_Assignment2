@@ -47,6 +47,7 @@ public:
 
     virtual Component *Clone(GameObject *parent) = 0;
     virtual bool CheckCollision(Collider2D *other) = 0;
+    virtual Vector2 GetNormal(Vector2 point) = 0;
 };
 
 class CollisionManager {
@@ -81,6 +82,8 @@ public:
 
     bool CheckCollision(CircleCollider2D *other);
     bool CheckCollision(BoxCollider2D *other);
+
+    Vector2 GetNormal(Vector2 point);
 };
 
 class BoxCollider2D : public Collider2D {
@@ -97,6 +100,8 @@ public:
 
     bool CheckCollision(CircleCollider2D *other);
     bool CheckCollision(BoxCollider2D *other);
+
+    Vector2 GetNormal(Vector2 point);
 };
 
 bool CheckCollision(CircleCollider2D *circle, BoxCollider2D *box);

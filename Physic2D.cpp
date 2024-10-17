@@ -20,7 +20,9 @@ void Rigidbody2D::Update() {
 
     this->velocity = this->velocity * (1 - this->drag);
 
-    if (this->velocity.Magnitude() < EPS) {
+    const float MINIMUM_VELOCITY = 0.05f;
+
+    if (this->velocity.Magnitude() < MINIMUM_VELOCITY) {
         this->velocity = Vector2(0, 0);
     }
 
@@ -46,10 +48,18 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
         return;
     }
 
+    this->acceleration = Vector2(0, 0);
+
+    // std::cout << "Bouncing off" << std::endl;
+    // std::cout << "Velocity before: " << this->velocity.x << ", " << this->velocity.y << std::endl;
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
+    // std::cout << "Velocity after: " << this->velocity.x << ", " << this->velocity.y << std::endl;
 }
 
 Vector2 Rigidbody2D::Reflect(Vector2 velocity, Vector2 normal) {
+    if (normal.Magnitude() < EPS) {
+        return Vector2(0, 0);
+    }
     return velocity - 2 * (velocity.Dot(normal)) * normal;
 }
 
@@ -80,6 +90,8 @@ void Collider2D::SetOffset(Vector2 offset) {
 }
 
 // CollisionManager Implementation
+CollisionManager::CollisionManager() {}
+
 CollisionManager *CollisionManager::GetInstance() {
     if (instance == nullptr) {
         instance = new CollisionManager();
@@ -109,7 +121,7 @@ void CollisionManager::Update() {
 
             if (collider1->CheckCollision(collider2)) {
                 collider1->OnCollisionEnter.raise(collider2);
-                collider1->OnCollisionEnter.raise(collider1);
+                collider2->OnCollisionEnter.raise(collider1);
             }
         }
     }
@@ -132,6 +144,14 @@ Component *CircleCollider2D::Clone(GameObject *parent) {
     return newCollider;
 }
 
+bool CircleCollider2D::CheckCollision(Collider2D *other) {
+    if (dynamic_cast<CircleCollider2D *>(other)) {
+        return this->CheckCollision(dynamic_cast<CircleCollider2D *>(other));
+    } else if (dynamic_cast<BoxCollider2D *>(other)) {
+        return this->CheckCollision(dynamic_cast<BoxCollider2D *>(other));
+    }
+}
+
 bool CircleCollider2D::CheckCollision(CircleCollider2D *other) {
     return (this->gameObject->transform.position - other->gameObject->transform.position).Magnitude() < this->radius + other->radius;
 }
@@ -140,6 +160,9 @@ bool CircleCollider2D::CheckCollision(BoxCollider2D *other) {
     return ::CheckCollision(this, other);
 }
 
+Vector2 CircleCollider2D::GetNormal(Vector2 point) {
+    return (point - this->gameObject->transform.position).Normalize();
+}
 
 // BoxCollider2D Implementation
 BoxCollider2D::BoxCollider2D(GameObject *parent, Vector2 offset, Vector2 size) : Collider2D(parent, offset) {
@@ -157,6 +180,15 @@ Component *BoxCollider2D::Clone(GameObject *parent) {
     return newCollider;
 }
 
+bool BoxCollider2D::CheckCollision(Collider2D *other) {
+
+    if (dynamic_cast<CircleCollider2D *>(other)) {
+        return this->CheckCollision(dynamic_cast<CircleCollider2D *>(other));
+    } else if (dynamic_cast<BoxCollider2D *>(other)) {
+        return this->CheckCollision(dynamic_cast<BoxCollider2D *>(other));
+    }
+}
+
 bool BoxCollider2D::CheckCollision(CircleCollider2D *other) {
     return ::CheckCollision(other, this);
 }
@@ -171,6 +203,38 @@ bool BoxCollider2D::CheckCollision(BoxCollider2D *other) {
     bool collisionY = box1Max.y >= box2Min.y && box1Min.y <= box2Max.y;
 
     return collisionX && collisionY;
+}
+
+Vector2 BoxCollider2D::GetNormal(Vector2 point) {
+    Vector2 boxMin = this->gameObject->transform.position - this->size / 2 + this->offset;
+    Vector2 boxMax = this->gameObject->transform.position + this->size / 2 + this->offset;
+
+    if (point.x < boxMin.x) {
+        return Vector2(-1, 0);
+    }
+    if (point.x > boxMax.x) {
+        return Vector2(1, 0);
+    }
+    if (point.y < boxMin.y) {
+        return Vector2(0, -1);
+    }
+    if (point.y > boxMax.y) {
+        return Vector2(0, 1);
+    }
+
+    // Determine the normal based on the box center
+    Vector2 boxCenter = (boxMin + boxMax) / 2;
+    Vector2 direction = (point - boxCenter).Normalize();
+
+    // return direction;
+
+    if (direction.x * direction.x > direction.y * direction.y) {
+        return Vector2(direction.x > 0 ? 1 : -1, 0);
+    } else {
+        return Vector2(0, direction.y > 0 ? 1 : -1);
+    }
+
+    return Vector2(0, 0);
 }
 
 //General Collision Functions
