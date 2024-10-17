@@ -1,6 +1,8 @@
+#include "Global.hpp"
 #include "Game.hpp"
 #include "CustomClasses.hpp"
-#include "Global.hpp"
+#include "Physic2D.hpp"
+#include "Helper.hpp"
 #include <iostream>
 
 Game::Game() {
@@ -40,10 +42,6 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
     objectInit();
 }
 
-void dummy() {
-    std::cout << "Dummy" << std::endl;
-}
-
 GameObject *player = new GameObject("Player");
 
 void Game::objectInit() {
@@ -70,6 +68,32 @@ void Game::objectInit() {
     // SceneManager::GetInstance()->LoadScene("Main");
     #pragma endregion
 
+    #pragma region TEST PHYSIC2D
+
+    Scene *mainScene = new Scene("Main");
+
+    GameObject *ball = new GameObject("Ball");
+    ball->transform.position = Vector2(100, 0);
+    ball->transform.scale = Vector2(3, 3);
+
+    ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), LoadSpriteSheet("Assets/default.png")));
+    
+    ball->AddComponent(new Animator(ball, {
+        AnimationClip("Roll", "Assets/soccer_ball.png", Vector2(15, 15), 1000, true, 1.0, 0, 1)
+    }));
+    ball->GetComponent<Animator>()->Play("Roll");
+    
+    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, 0.9));
+    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(100, 100));
+
+    ball->AddComponent(new RollSpeedController(ball));
+    ball->AddComponent(new StayInBounds(ball, false));
+
+    mainScene->AddGameObject(ball);
+
+    SceneManager::GetInstance()->AddScene(mainScene);
+    SceneManager::GetInstance()->LoadScene("Main");
+    #pragma endregion
 
 }
 
@@ -121,12 +145,17 @@ void Game::update() {
     //
     #pragma endregion
 
+    GameObject *ball = SceneManager::GetInstance()->GetGameObject("Ball");
+
+    Vector2 pos = ball->transform.position;
+    // ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(.01, .01));
+
     SceneManager::GetInstance()->Update();
 }
 
 void Game::render() {
     SDL_RenderClear(renderer);
-    // Add your rendering stuff here
+    // Add your rend☺ering stuff here
 
     SceneManager::GetInstance()->Draw();
     SDL_RenderPresent(renderer);

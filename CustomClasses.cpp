@@ -17,7 +17,7 @@ std::vector<SDL_Texture *> TEXTURES;
 // Vector2 class implementation
 Vector2::Vector2() : x(0), y(0) {}
 
-Vector2::Vector2(int x, int y) : x(x), y(y) {}
+Vector2::Vector2(float x, float y) : x(x), y(y) {}
 
 Vector2 Vector2::operator+(Vector2 v) {
     return Vector2(x + v.x, y + v.y);
@@ -27,25 +27,55 @@ Vector2 Vector2::operator-(Vector2 v) {
     return Vector2(x - v.x, y - v.y);
 }
 
-Vector2 Vector2::operator*(int f) {
+Vector2 Vector2::operator*(float f) {
     return Vector2(x * f, y * f);
 }
 
-int Vector2::Magnitude() {
+Vector2 operator*(float f, Vector2 v) {
+    return Vector2(v.x * f, v.y * f);
+}
+
+Vector2 Vector2::operator/(float f) {
+    return Vector2(x / f, y / f);
+}
+
+Vector2 Vector2::operator+=(Vector2 v) {
+    x += v.x;
+    y += v.y;
+    return *this;
+}
+
+float Vector2::Magnitude() {
     return std::sqrt(x * x + y * y);
 }
 
 Vector2 Vector2::Normalize() {
-    int magnitude = Magnitude();
+    float magnitude = Magnitude();
     return Vector2(x / magnitude, y / magnitude);
 }
 
-int Vector2::Distance(Vector2 v) {
+float Vector2::Distance(Vector2 v) {
     return std::sqrt((v.x - x) * (v.x - x) + (v.y - y) * (v.y - y));
 }
 
-int Vector2::Dot(Vector2 v1, Vector2 v2) {
+float Vector2::Distance(Vector2 v1, Vector2 v2) {
+    return std::sqrt((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
+}
+
+float Vector2::Dot(Vector2 v){
+    return x * v.x + y * v.y;
+}
+
+float Vector2::Dot(Vector2 v1, Vector2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
+}
+
+float Vector2::Cross(Vector2 v){
+    return x * v.y - y * v.x;
+}
+
+float Vector2::Cross(Vector2 v1, Vector2 v2){
+    return v1.x * v2.y - v1.y * v2.x;
 }
 
 #pragma endregion
@@ -193,8 +223,7 @@ Component::~Component() {}
 //     SpriteRenderer::renderer = renderer;
 // }
 
-SpriteRenderer::SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
-    this->renderer = renderer;
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
     this->spriteSheet = spriteSheet;
 
     this->spriteRect = SDL_Rect();
@@ -202,6 +231,10 @@ SpriteRenderer::SpriteRenderer(GameObject *gameObject, SDL_Renderer *renderer, V
     this->spriteRect.y = 0;
     this->spriteRect.w = (int)spriteSize.x;
     this->spriteRect.h = (int)spriteSize.y;
+
+    if (defaultSpriteSheet) {
+        this->spriteSheet = defaultSpriteSheet;
+    }
 }
 
 SpriteRenderer::~SpriteRenderer() {}
@@ -209,7 +242,7 @@ SpriteRenderer::~SpriteRenderer() {}
 void SpriteRenderer::Update() {}
 
 void SpriteRenderer::Draw() {
-    if (!renderer) {
+    if (!RENDERER) {
         throw "Renderer is null in SpriteRenderer::Draw()";
         return;
     }
@@ -226,11 +259,11 @@ void SpriteRenderer::Draw() {
 
     // Copy the sprite to the renderer
     // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
-    SDL_RenderCopyEx(renderer, spriteSheet, &spriteRect, &destRect, gameObject->transform.rotation, nullptr, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, gameObject->transform.rotation, nullptr, SDL_FLIP_NONE);
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
-    SpriteRenderer *newRenderer = new SpriteRenderer(parent, renderer, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
+    SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
 
     return newRenderer;
 }
@@ -408,6 +441,10 @@ void Animator::Stop() {
     currentClip->isPlaying = false;
 }
 
+AnimationClip * Animator::GetCurrentClip(){
+    return currentClip;
+}
+
 AnimationClip *Animator::GetClip(std::string name) {
     auto it = clips.find(name);
     if (it != clips.end()) {
@@ -511,6 +548,10 @@ void SceneManager::AddGameObject(GameObject *gameObject){
 
 void SceneManager::RemoveGameObject(std::string name){
     GameObjectManager::GetInstance()->RemoveGameObject(name);
+}
+
+GameObject *SceneManager::GetGameObject(std::string name){
+    return GameObjectManager::GetInstance()->GetGameObject(name);
 }
 
 void SceneManager::AddScene(Scene *scene) {
