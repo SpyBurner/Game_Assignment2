@@ -36,7 +36,6 @@ public:
     }
 };
 
-
 class StayInBounds : public Component {
 public:
     bool teleport = false;
@@ -47,18 +46,52 @@ public:
     ~StayInBounds() {}
 
     void Update() {
+        Rigidbody2D *rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
         if (this->gameObject->transform.position.x < 0) {
-            this->gameObject->transform.position.x = (teleport) ? WIDTH - 35 : 0;
+            if (teleport){
+                this->gameObject->transform.position.x = WIDTH - 35;
+            }
+            else{
+                if (rigidbody != nullptr)
+                    rigidbody->BounceOff(Vector2(1, 0));
+                else
+                    this->gameObject->transform.position.x = 0;
+            }
         }
         if (this->gameObject->transform.position.x > WIDTH - 35) {
-            this->gameObject->transform.position.x = (teleport) ? 0 : WIDTH - 35;
+            if (teleport){
+                this->gameObject->transform.position.x = 0;
+            }
+            else{
+                if (rigidbody != nullptr)
+                    rigidbody->BounceOff(Vector2(-1, 0));
+                else
+                    this->gameObject->transform.position.x = WIDTH - 35;
+            }
         }
         if (this->gameObject->transform.position.y < 0) {
-            this->gameObject->transform.position.y = (teleport) ? HEIGHT - 44 : 0;
+            if (teleport){
+                this->gameObject->transform.position.y = HEIGHT - 44;
+            }
+            else{
+                if (rigidbody != nullptr)
+                    rigidbody->BounceOff(Vector2(0, 1));
+                else
+                    this->gameObject->transform.position.y = 0;
+            }
         }
         if (this->gameObject->transform.position.y > HEIGHT - 44) {
-            this->gameObject->transform.position.y = (teleport) ? 0 : HEIGHT - 44;
+            if (teleport){
+                this->gameObject->transform.position.y = 0;
+            }
+            else{
+                if (rigidbody != nullptr)
+                    rigidbody->BounceOff(Vector2(0, -1));
+                else
+                    this->gameObject->transform.position.y = HEIGHT - 44;
+            }
         }
+    
     }
 
     void Draw() {}

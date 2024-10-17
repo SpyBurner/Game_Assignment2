@@ -73,8 +73,8 @@ void Game::objectInit() {
     Scene *mainScene = new Scene("Main");
 
     GameObject *ball = new GameObject("Ball");
-    ball->transform.position = Vector2(50, 0);
-    ball->transform.scale = Vector2(10, 10);
+    ball->transform.position = Vector2(100, 0);
+    ball->transform.scale = Vector2(3, 3);
 
     ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), LoadSpriteSheet("Assets/default.png")));
     
@@ -83,11 +83,11 @@ void Game::objectInit() {
     }));
     ball->GetComponent<Animator>()->Play("Roll");
     
-    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025));
-    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(50, 50));
+    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, 0.9));
+    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(100, 100));
 
     ball->AddComponent(new RollSpeedController(ball));
-    ball->AddComponent(new StayInBounds(ball, true));
+    ball->AddComponent(new StayInBounds(ball, false));
 
     mainScene->AddGameObject(ball);
 

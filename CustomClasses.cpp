@@ -31,6 +31,10 @@ Vector2 Vector2::operator*(float f) {
     return Vector2(x * f, y * f);
 }
 
+Vector2 operator*(float f, Vector2 v) {
+    return Vector2(v.x * f, v.y * f);
+}
+
 Vector2 Vector2::operator/(float f) {
     return Vector2(x / f, y / f);
 }
@@ -54,8 +58,24 @@ float Vector2::Distance(Vector2 v) {
     return std::sqrt((v.x - x) * (v.x - x) + (v.y - y) * (v.y - y));
 }
 
+float Vector2::Distance(Vector2 v1, Vector2 v2) {
+    return std::sqrt((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
+}
+
+float Vector2::Dot(Vector2 v){
+    return x * v.x + y * v.y;
+}
+
 float Vector2::Dot(Vector2 v1, Vector2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
+}
+
+float Vector2::Cross(Vector2 v){
+    return x * v.y - y * v.x;
+}
+
+float Vector2::Cross(Vector2 v1, Vector2 v2){
+    return v1.x * v2.y - v1.y * v2.x;
 }
 
 #pragma endregion
