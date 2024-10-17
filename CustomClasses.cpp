@@ -1,5 +1,6 @@
 #include "CustomClasses.hpp"
 #include "Global.hpp"
+#include "Physic2D.hpp"
 #include <SDL2/SDL_image.h>
 #include <cmath>
 #include <iostream>
@@ -316,7 +317,7 @@ AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteS
 
     animCooldown = length / (endSprite - startSprite); // Calculate animation cooldown based on length and number of frames
 
-    onComplete = new Event();
+    onComplete = new Event<>();
 }
 
 AnimationClip::AnimationClip(const AnimationClip &clip){
@@ -342,7 +343,7 @@ AnimationClip::AnimationClip(const AnimationClip &clip){
     
     animCooldown = clip.animCooldown; // Calculate animation cooldown based on length and number of frames 
 
-    onComplete = new Event();
+    onComplete = new Event<>();
 }
 
 AnimationClip::~AnimationClip() {
@@ -525,6 +526,7 @@ SceneManager::~SceneManager() {
         delete pair.second;
     }
     scenes.clear();
+    delete CollisionManager::GetInstance();
     delete GameObjectManager::GetInstance();
 }
 

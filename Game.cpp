@@ -4,7 +4,7 @@
 #include "Physic2D.hpp"
 #include "Helper.hpp"
 #include <iostream>
-
+#include <cmath>
 Game::Game() {
     isRunning = false;
 }
@@ -84,7 +84,7 @@ void Game::objectInit() {
     ball->GetComponent<Animator>()->Play("Roll");
     
     ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, 0.9));
-    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(100, 100));
+    // ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(100, 100));
 
     ball->AddComponent(new RollSpeedController(ball));
     ball->AddComponent(new StayInBounds(ball, false));
@@ -148,7 +148,9 @@ void Game::update() {
     GameObject *ball = SceneManager::GetInstance()->GetGameObject("Ball");
 
     Vector2 pos = ball->transform.position;
-    // ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(.01, .01));
+    Rigidbody2D *rigidbody = ball->GetComponent<Rigidbody2D>();
+    rigidbody->AddForce(Vector2(sin(SDL_GetTicks() / 1000.0), sin(SDL_GetTicks() / 1000.0 + 1/2 * 3.14)).Normalize() * 10);
+    
 
     SceneManager::GetInstance()->Update();
 }

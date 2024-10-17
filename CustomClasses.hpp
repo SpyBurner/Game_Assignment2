@@ -11,7 +11,54 @@
 
 
 class GameObject;
-class Event;
+
+// Event
+template<typename... Args>
+class Event {
+public:
+    using Handler = std::function<void(Args...)>;
+
+    Event() {}
+    ~Event() { handlers.clear(); }
+
+    void addHandler(Handler handler) {
+        handlers.push_back(handler);
+    }
+
+    void raise(Args... args) {
+        for (auto &handler : handlers) {
+            handler(std::forward<Args>(args)...);
+        }
+    }
+
+private:
+    std::vector<Handler> handlers;
+};
+
+// Specialization for no arguments
+template<>
+class Event<> {
+public:
+    using Handler = std::function<void()>;
+
+    Event() {}
+    ~Event() { handlers.clear(); }
+
+    void addHandler(Handler handler) {
+        handlers.push_back(handler);
+    }
+
+    void raise() {
+        for (auto &handler : handlers) {
+            handler();
+        }
+    }
+
+private:
+    std::vector<Handler> handlers;
+};
+
+
 class Vector2 {
 public:
     float x, y;
@@ -107,7 +154,7 @@ public:
 
     float speedScale = 0, animCooldown = 0, lastFrameTime = 0, startTime = 0;
 
-    Event *onComplete = nullptr;
+    Event<> *onComplete = nullptr;
     
     AnimationClip();
     AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale, int startSprite, int endSprite);
@@ -186,27 +233,6 @@ T *GameObject::GetComponent() {
     return nullptr;
 }
 
-// Event
-class Event {
-public:
-    using Handler = std::function<void()>;
-
-    Event() {}
-    ~Event() { handlers.clear(); }
-
-    void addHandler(Handler handler) {
-        handlers.push_back(handler);
-    }
-
-    void raise() {
-        for (auto &handler : handlers) {
-            handler();
-        }
-    }
-
-private:
-    std::vector<Handler> handlers;
-};
 
 // More like a template for the GameObjectManager
 class Scene {
