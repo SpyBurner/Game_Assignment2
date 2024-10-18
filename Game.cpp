@@ -169,6 +169,13 @@ void Game::objectInit() {
     player->AddComponent(new MovementController(player, 10, true));
     player2->AddComponent(new MovementController(player2, 10, false));
 
+    GameObject *controllerSwitcher = new GameObject("ControllerSwitcher");
+    MovementControllerSwitcher* movementControllerSwitcher = dynamic_cast<MovementControllerSwitcher *>(controllerSwitcher->AddComponent(new MovementControllerSwitcher(controllerSwitcher)));
+    movementControllerSwitcher->AddMovementController( SDLK_1, player->GetComponent<MovementController>());
+    movementControllerSwitcher->AddMovementController( SDLK_2, player2->GetComponent<MovementController>());
+
+    mainScene->AddGameObject(controllerSwitcher);
+
     mainScene->AddGameObject(player);
     mainScene->AddGameObject(player2);
 
