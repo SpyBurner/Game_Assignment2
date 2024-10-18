@@ -196,7 +196,7 @@ Component *GameObject::AddComponent(Component *component) {
     return component;
 }
 
-GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, float rotation, Vector2 scale) {
+GameObject *GameObject::Instantiate(std::string name, const GameObject *origin, Vector2 position, float rotation, Vector2 scale) {
     GameObject *newObject = new GameObject(name);
 
     newObject->transform.position = position;
@@ -204,13 +204,11 @@ GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, 
     newObject->transform.scale = scale;
 
     // Deep copy components
-    for (auto &component : origin.components) {
+    for (auto &component : origin->components) {
         Component *newComponent = component->Clone(newObject);
         newObject->components.push_back(newComponent);
     }
 
-    // Add to manager
-    GameObjectManager::GetInstance()->AddGameObject(newObject);
     return newObject;
 }
 

@@ -21,7 +21,6 @@ void Rigidbody2D::Update() {
     this->velocity = this->velocity * (1 - this->drag);
 
     const float MINIMUM_VELOCITY = 0.05f;
-
     if (this->velocity.Magnitude() < MINIMUM_VELOCITY) {
         this->velocity = Vector2(0, 0);
     }
@@ -50,10 +49,7 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
 
     this->acceleration = Vector2(0, 0);
 
-    // std::cout << "Bouncing off" << std::endl;
-    // std::cout << "Velocity before: " << this->velocity.x << ", " << this->velocity.y << std::endl;
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
-    // std::cout << "Velocity after: " << this->velocity.x << ", " << this->velocity.y << std::endl;
 }
 
 Vector2 Rigidbody2D::Reflect(Vector2 velocity, Vector2 normal) {

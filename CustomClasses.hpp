@@ -217,7 +217,7 @@ public:
     template <typename T>
     T *GetComponent();
 
-    static GameObject *Instantiate(std::string name, const GameObject &origin, Vector2 position, float rotation, Vector2 scale);
+    static GameObject *Instantiate(std::string name, const GameObject *origin, Vector2 position, float rotation, Vector2 scale);
     static void Destroy(std::string name);
 };
 

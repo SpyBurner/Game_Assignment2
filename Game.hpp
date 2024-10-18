@@ -17,6 +17,8 @@ public:
 
     bool running();
 
+    static SDL_Event event;
+
 private: 
     bool isRunning;
     SDL_Window *window;
