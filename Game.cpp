@@ -132,9 +132,9 @@ void Game::objectInit() {
 
     player1->AddComponent(new SpriteRenderer(player1, Vector2(31, 82), 0, LoadSpriteSheet("Assets/actor.png")));
     player1->AddComponent(new Rigidbody2D(player1, 1, 0.04, .2));
-    player1->AddComponent(new CircleCollider2D(player1, Vector2(0, 35), 17 * player1->transform.scale.x));
+    //offset (0, 30)
+    player1->AddComponent(new CircleCollider2D(player1, Vector2(0, 0), 17 * player1->transform.scale.x));
     player1->AddComponent(new StayInBounds(player1, false));
-
     
     player1->transform.position = Vector2(25, 360);
         GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(100, 420), 0, Vector2(1, 1));
@@ -175,6 +175,15 @@ void Game::objectInit() {
     player4->AddComponent(new MovementController(player4, 10, false));
     player5->AddComponent(new MovementController(player5, 10, false));
     player6->AddComponent(new MovementController(player6, 10, false));
+
+    player1->AddComponent(new AIGoalKeeper(player1, ball, 10, true));
+    player4->AddComponent(new AIGoalKeeper(player4, ball, 10, false));
+
+    player2->AddComponent(new AIDefender(player2, ball, 10, true));
+    player5->AddComponent(new AIDefender(player5, ball, 10, false));
+
+    player3->AddComponent(new AIAttacker(player3, ball, 10, true));
+    player6->AddComponent(new AIAttacker(player6, ball, 10, false));
 
     // First controller switcher for player1, player2, and player3
     GameObject *controllerSwitcher1 = new GameObject("ControllerSwitcher1");
