@@ -82,8 +82,8 @@ void Game::objectInit() {
     ball->AddComponent(new Animator(ball, {AnimationClip("Roll", "Assets/soccer_ball.png", Vector2(15, 15), 1000, true, 1.0, 0, 1)}));
     ball->GetComponent<Animator>()->Play("Roll");
 
-    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, 0.9));
-    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(50, 50));
+    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, 0.95));
+    ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(70, 70));
 
     ball->AddComponent(new RollSpeedController(ball));
     ball->AddComponent(new StayInBounds(ball, false));
@@ -116,36 +116,11 @@ void Game::objectInit() {
     leftWall->transform.position = Vector2(0, 360);
     leftWall->transform.scale = Vector2(10, 720);
 
-    leftWall->AddComponent(new SpriteRenderer(leftWall, Vector2(15, 720), LoadSpriteSheet("Assets/wall.png")));
-    leftWall->AddComponent(new BoxCollider2D(leftWall, Vector2(0, 0), Vector2(15, 720)));
+    leftWall->AddComponent(new SpriteRenderer(leftWall, Vector2(15, 30), LoadSpriteSheet("Assets/wall.png")));
+    leftWall->AddComponent(new BoxCollider2D(leftWall, Vector2(0, 0),
+     Vector2(leftWall->transform.scale.x * 15, leftWall->transform.scale.y * 30)
+     ));
     mainScene->AddGameObject(leftWall);
-
-    // // Right wall
-    // GameObject *rightWall = new GameObject("RightWall");
-    // rightWall->transform.position = Vector2(1280, 360);
-    // rightWall->transform.scale = Vector2(10, 720);
-
-    // rightWall->AddComponent(new SpriteRenderer(rightWall, Vector2(15, 720), LoadSpriteSheet("Assets/wall.png")));
-    // rightWall->AddComponent(new BoxCollider2D(rightWall, Vector2(0, 0), Vector2(15, 720)));
-    // mainScene->AddGameObject(rightWall);
-
-    // // Top wall
-    // GameObject *topWall = new GameObject("TopWall");
-    // topWall->transform.position = Vector2(640, 0);
-    // topWall->transform.scale = Vector2(1280, 10);
-
-    // topWall->AddComponent(new SpriteRenderer(topWall, Vector2(1280, 15), LoadSpriteSheet("Assets/wall.png")));
-    // topWall->AddComponent(new BoxCollider2D(topWall, Vector2(0, 0), Vector2(1280, 15)));
-    // mainScene->AddGameObject(topWall);
-
-    // // Bottom wall
-    // GameObject *bottomWall = new GameObject("BottomWall");
-    // bottomWall->transform.position = Vector2(640, 720);
-    // bottomWall->transform.scale = Vector2(1280, 10);
-
-    // bottomWall->AddComponent(new SpriteRenderer(bottomWall, Vector2(1280, 15), LoadSpriteSheet("Assets/wall.png")));
-    // bottomWall->AddComponent(new BoxCollider2D(bottomWall, Vector2(0, 0), Vector2(1280, 15)));
-    // mainScene->AddGameObject(bottomWall);
 
     SceneManager::GetInstance()->AddScene(mainScene);
     SceneManager::GetInstance()->LoadScene("Main");
@@ -204,7 +179,7 @@ void Game::update() {
     Vector2 pos = ball->transform.position;
     Rigidbody2D *rigidbody = ball->GetComponent<Rigidbody2D>();
     // rigidbody->AddForce(Vector2(sin(SDL_GetTicks() / 1000.0), sin(SDL_GetTicks() / 1000.0 + 1 / 2 * 3.14)).Normalize() * 10);
-    rigidbody->AddForce(Vector2(2, 0));
+    // rigidbody->AddForce(Vector2(2, 0));
 
     // std::cout << "Ball Position: " << pos.x << ", " << pos.y << std::endl;
 
