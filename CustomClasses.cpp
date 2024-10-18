@@ -4,7 +4,7 @@
 #include <SDL2/SDL_image.h>
 #include <cmath>
 #include <iostream>
-
+#include <algorithm>
 // INIT STATIC
 GameObjectManager *GameObjectManager::instance = nullptr;
 SceneManager *SceneManager::instance = nullptr;
@@ -144,9 +144,29 @@ void GameObjectManager::Update() {
     }
 }
 
+//Draw ordered by SpriteRenderer drawOrder
 void GameObjectManager::Draw() {
+    std::vector<GameObject *> sortedGameObjects;
     for (auto &pair : gameObjects) {
-        pair.second->Draw();
+        if (pair.second->GetComponent<SpriteRenderer>() == nullptr) {
+            continue;
+        }
+        sortedGameObjects.push_back(pair.second);
+    }
+
+    std::sort(sortedGameObjects.begin(), sortedGameObjects.end(), [](GameObject *a, GameObject *b) {
+        SpriteRenderer *aRenderer = a->GetComponent<SpriteRenderer>();
+        SpriteRenderer *bRenderer = b->GetComponent<SpriteRenderer>();
+
+        if (aRenderer->GetDrawOrder() == bRenderer->GetDrawOrder()) {
+            return a->transform.position.y < b->transform.position.y;
+        }
+        
+        return aRenderer->GetDrawOrder() < bRenderer->GetDrawOrder();
+    });
+
+    for (auto &gameObject : sortedGameObjects) {
+        gameObject->Draw();
     }
 }
 
@@ -229,7 +249,9 @@ Component::~Component() {}
 //     SpriteRenderer::renderer = renderer;
 // }
 
-SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, int drawOrder, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
+    this->drawOrder = drawOrder;
+
     this->spriteSheet = spriteSheet;
 
     this->spriteRect = SDL_Rect();
@@ -272,7 +294,7 @@ void SpriteRenderer::Draw() {
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
-    SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
+    SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), drawOrder, spriteSheet);
 
     return newRenderer;
 }
@@ -291,6 +313,10 @@ SDL_Texture *LoadSpriteSheet(std::string path) {
     TEXTURES.push_back(texture);
 
     return texture;
+}
+
+int SpriteRenderer::GetDrawOrder() {
+    return drawOrder;
 }
 
 #pragma endregion

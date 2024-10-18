@@ -75,15 +75,16 @@ void Game::objectInit() {
 
 #pragma region TEST PHYSIC2D
     GameObject *ball = new GameObject("Ball");
-    ball->transform.position = Vector2(150, 320);
-    ball->transform.scale = Vector2(3, 3);
+    ball->tag = "Ball";
+    ball->transform.position = Vector2(640, 360);
+    ball->transform.scale = Vector2(2, 2);
 
-    ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), LoadSpriteSheet("Assets/default.png")));
+    ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), 10, LoadSpriteSheet("Assets/default.png")));
 
     ball->AddComponent(new Animator(ball, {AnimationClip("Roll", "Assets/soccer_ball.png", Vector2(15, 15), 1000, true, 1.0, 0, 1)}));
     ball->GetComponent<Animator>()->Play("Roll");
 
-    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, 0.95));
+    ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, .9));
     ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(70, 70));
 
     ball->AddComponent(new RollSpeedController(ball));
@@ -126,58 +127,77 @@ void Game::objectInit() {
 
 #pragma region TEST CONTROLLER
 
-    GameObject *player = new GameObject("Player");
-    player->transform.position = Vector2(100, 360);
-    player->transform.scale = Vector2(2, 2);
+    GameObject *player1 = new GameObject("Player1");
+    player1->transform.scale = Vector2(1, 1);
 
-    player->AddComponent(new SpriteRenderer(player, Vector2(31, 82), LoadSpriteSheet("Assets/actor.png")));
-    player->AddComponent(new Rigidbody2D(player, 1, 0.025, .5));
+    player1->AddComponent(new SpriteRenderer(player1, Vector2(31, 82), 0, LoadSpriteSheet("Assets/actor.png")));
+    player1->AddComponent(new Rigidbody2D(player1, 1, 0.04, .2));
+    player1->AddComponent(new CircleCollider2D(player1, Vector2(0, 35), 17 * player1->transform.scale.x));
+    player1->AddComponent(new StayInBounds(player1, false));
 
-    player->AddComponent(new BoxCollider2D(player, Vector2(0, 0), 
-        Vector2(31 * player->transform.scale.x, 82 * player->transform.scale.y)));
+    
+    player1->transform.position = Vector2(25, 360);
+        GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(100, 420), 0, Vector2(1, 1));
+    GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(100, 300), 0, Vector2(1, 1));
 
-    player->AddComponent(new StayInBounds(player, false));
+    GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(1125, 300), 0, Vector2(1, 1));
+        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(1125, 420), 0, Vector2(1, 1));
+    GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(1200, 360), 0, Vector2(1, 1));
 
-    GameObject *player2 = GameObject::Instantiate("Player2", player, Vector2(600, 360), 0, Vector2(2, 2));
-
-    player->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler( 
-        [player](Collider2D *collider) {
-            Rigidbody2D *rigidbody = player->GetComponent<Rigidbody2D>();
-
-            if (collider->gameObject->GetName() == "Ball") {
-                collider->gameObject->GetComponent<Rigidbody2D>()->AddForce(rigidbody->velocity);
-                return;
+    auto setupCollisionHandler = [](GameObject *player) {
+        player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
+            [player](Collider2D *collider) {
+                Rigidbody2D *rigidbody = player->GetComponent<Rigidbody2D>();
+                if (collider->gameObject->tag == "Ball") {
+                    if (rigidbody->velocity.Magnitude() > 0.1)
+                        collider->gameObject->GetComponent<Rigidbody2D>()->AddForce(rigidbody->velocity);
+                    else{
+                        Vector2 normal = collider->GetNormal(player->transform.position);
+                        rigidbody->BounceOff(normal);
+                    }
+                    return;
+                }
             }
+        );
+    };
 
-            rigidbody->BounceOff(collider->GetNormal(player->transform.position));
-        }
-    );
+    setupCollisionHandler(player1);
+    setupCollisionHandler(player2);
+    setupCollisionHandler(player3);
+    setupCollisionHandler(player4);
+    setupCollisionHandler(player5);
+    setupCollisionHandler(player6);
 
-    player2->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler(
-        [player2](Collider2D *collider) {
-            Rigidbody2D *rigidbody = player2->GetComponent<Rigidbody2D>();
+    player1->AddComponent(new MovementController(player1, 10, true));
+    player2->AddComponent(new MovementController(player2, 10, true));
+    player3->AddComponent(new MovementController(player3, 10, true));
 
-            if (collider->gameObject->GetName() == "Ball") {
-                collider->gameObject->GetComponent<Rigidbody2D>()->AddForce(rigidbody->velocity);
-                return;
-            }
+    player4->AddComponent(new MovementController(player4, 10, false));
+    player5->AddComponent(new MovementController(player5, 10, false));
+    player6->AddComponent(new MovementController(player6, 10, false));
 
-            rigidbody->BounceOff(collider->GetNormal(player2->transform.position));
-        }
-    );
+    // First controller switcher for player1, player2, and player3
+    GameObject *controllerSwitcher1 = new GameObject("ControllerSwitcher1");
+    MovementControllerSwitcher* movementControllerSwitcher1 = dynamic_cast<MovementControllerSwitcher *>(controllerSwitcher1->AddComponent(new MovementControllerSwitcher(controllerSwitcher1)));
+    movementControllerSwitcher1->AddMovementController(SDLK_1, player1->GetComponent<MovementController>());
+    movementControllerSwitcher1->AddMovementController(SDLK_2, player2->GetComponent<MovementController>());
+    movementControllerSwitcher1->AddMovementController(SDLK_3, player3->GetComponent<MovementController>());
+    mainScene->AddGameObject(controllerSwitcher1);
 
-    player->AddComponent(new MovementController(player, 10, true));
-    player2->AddComponent(new MovementController(player2, 10, false));
+    // Second controller switcher for player4, player5, and player6
+    GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
+    MovementControllerSwitcher* movementControllerSwitcher2 = dynamic_cast<MovementControllerSwitcher *>(controllerSwitcher2->AddComponent(new MovementControllerSwitcher(controllerSwitcher2)));
+    movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
+    movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
+    movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
+    mainScene->AddGameObject(controllerSwitcher2);
 
-    GameObject *controllerSwitcher = new GameObject("ControllerSwitcher");
-    MovementControllerSwitcher* movementControllerSwitcher = dynamic_cast<MovementControllerSwitcher *>(controllerSwitcher->AddComponent(new MovementControllerSwitcher(controllerSwitcher)));
-    movementControllerSwitcher->AddMovementController( SDLK_1, player->GetComponent<MovementController>());
-    movementControllerSwitcher->AddMovementController( SDLK_2, player2->GetComponent<MovementController>());
-
-    mainScene->AddGameObject(controllerSwitcher);
-
-    mainScene->AddGameObject(player);
+    mainScene->AddGameObject(player1);
     mainScene->AddGameObject(player2);
+    mainScene->AddGameObject(player3);
+    mainScene->AddGameObject(player4);
+    mainScene->AddGameObject(player5);
+    mainScene->AddGameObject(player6);
 
 #pragma endregion
 

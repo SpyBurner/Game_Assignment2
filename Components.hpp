@@ -41,20 +41,20 @@ public:
 
         if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP){
             if (Game::event.key.keysym.sym == upKey){
-                upSpeed = Game::event.type == SDL_KEYDOWN ? -actualSpeed : 0;
+                upSpeed = Game::event.type == SDL_KEYDOWN ? -1 : 0;
             }
             if (Game::event.key.keysym.sym == downKey){
-                downSpeed = Game::event.type == SDL_KEYDOWN ? actualSpeed : 0;
+                downSpeed = Game::event.type == SDL_KEYDOWN ? 1 : 0;
             }
             if (Game::event.key.keysym.sym == leftKey){
-                leftSpeed = Game::event.type == SDL_KEYDOWN ? -actualSpeed : 0;
+                leftSpeed = Game::event.type == SDL_KEYDOWN ? -1 : 0;
             }
             if (Game::event.key.keysym.sym == rightKey){
-                rightSpeed = Game::event.type == SDL_KEYDOWN ? actualSpeed : 0;
+                rightSpeed = Game::event.type == SDL_KEYDOWN ? 1 : 0;
             }
         }
 
-        rigidbody->AddForce(Vector2(leftSpeed + rightSpeed, upSpeed + downSpeed));
+        rigidbody->AddForce(Vector2(leftSpeed + rightSpeed, upSpeed + downSpeed). Normalize() * actualSpeed);
     }
 
     void Enable(){

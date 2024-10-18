@@ -119,6 +119,9 @@ public:
 SDL_Texture *LoadSpriteSheet(std::string path);
 
 class SpriteRenderer : public Component {
+private:
+    int drawOrder = 0;
+
 public:
     SDL_Texture *spriteSheet = nullptr;
     SDL_Rect spriteRect;
@@ -127,11 +130,13 @@ public:
 
     // static void SetRenderer(SDL_Renderer *renderer);
 
-    SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet = nullptr);
+    SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, int drawOrder = 0, SDL_Texture *defaultSpriteSheet = nullptr);
     ~SpriteRenderer();
     void Update();
     void Draw();
     Component *Clone(GameObject *parent);
+
+    int GetDrawOrder();
 };
 
 class AnimationClip {
@@ -204,6 +209,8 @@ private:
 
 public:
     Transform transform;
+    std::string tag = "Default";
+
     GameObject();
     GameObject(std::string name);
     ~GameObject();
