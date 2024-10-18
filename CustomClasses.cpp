@@ -1,5 +1,6 @@
 #include "CustomClasses.hpp"
 #include "Global.hpp"
+#include "Physic2D.hpp"
 #include <SDL2/SDL_image.h>
 #include <cmath>
 #include <iostream>
@@ -46,11 +47,17 @@ Vector2 Vector2::operator+=(Vector2 v) {
 }
 
 float Vector2::Magnitude() {
+    if (x == 0 && y == 0) {
+        return 0;
+    }
     return std::sqrt(x * x + y * y);
 }
 
 Vector2 Vector2::Normalize() {
     float magnitude = Magnitude();
+    if (magnitude == 0) {
+        return Vector2(0, 0);
+    }
     return Vector2(x / magnitude, y / magnitude);
 }
 
@@ -62,7 +69,7 @@ float Vector2::Distance(Vector2 v1, Vector2 v2) {
     return std::sqrt((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
 }
 
-float Vector2::Dot(Vector2 v){
+float Vector2::Dot(Vector2 v) {
     return x * v.x + y * v.y;
 }
 
@@ -70,11 +77,11 @@ float Vector2::Dot(Vector2 v1, Vector2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
 }
 
-float Vector2::Cross(Vector2 v){
+float Vector2::Cross(Vector2 v) {
     return x * v.y - y * v.x;
 }
 
-float Vector2::Cross(Vector2 v1, Vector2 v2){
+float Vector2::Cross(Vector2 v1, Vector2 v2) {
     return v1.x * v2.y - v1.y * v2.x;
 }
 
@@ -184,9 +191,10 @@ std::string GameObject::GetName() {
     return name;
 }
 
-void GameObject::AddComponent(Component *component) {
+Component *GameObject::AddComponent(Component *component) {
     components.push_back(component);
- }
+    return component;
+}
 
 GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, float rotation, Vector2 scale) {
     GameObject *newObject = new GameObject(name);
@@ -252,14 +260,17 @@ void SpriteRenderer::Draw() {
     }
     SDL_Rect destRect;
     // Moving the rect to center the sprite
-    destRect.x = gameObject->transform.position.x - spriteRect.w / 2;
-    destRect.y = gameObject->transform.position.y - spriteRect.h / 2;
-    destRect.w = spriteRect.w * gameObject->transform.scale.x;
-    destRect.h = spriteRect.h * gameObject->transform.scale.y;
+
+    Transform *transform = &(gameObject->transform);
+
+    destRect.x = transform->position.x - spriteRect.w * transform->scale.x / 2;
+    destRect.y = transform->position.y - spriteRect.h * transform->scale.y / 2;
+    destRect.w = spriteRect.w * transform->scale.x;
+    destRect.h = spriteRect.h * transform->scale.y;
 
     // Copy the sprite to the renderer
     // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
-    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, gameObject->transform.rotation, nullptr, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, SDL_FLIP_NONE);
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
@@ -289,7 +300,7 @@ SDL_Texture *LoadSpriteSheet(std::string path) {
 #pragma region Animator
 // AnimationClip class implementation
 
-AnimationClip::AnimationClip(){}
+AnimationClip::AnimationClip() {}
 
 AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteSize,
                              float length, bool loop, float speedScale, int startSprite, int endSprite) {
@@ -316,10 +327,10 @@ AnimationClip::AnimationClip(std::string name, std::string path, Vector2 spriteS
 
     animCooldown = length / (endSprite - startSprite); // Calculate animation cooldown based on length and number of frames
 
-    onComplete = new Event();
+    onComplete = new Event<>();
 }
 
-AnimationClip::AnimationClip(const AnimationClip &clip){
+AnimationClip::AnimationClip(const AnimationClip &clip) {
     name = clip.name;
     spriteSize = clip.spriteSize;
     length = clip.length;
@@ -339,10 +350,10 @@ AnimationClip::AnimationClip(const AnimationClip &clip){
     currentSpriteRect.y = 0; // Assuming the sprites are in a single row
     currentSpriteRect.w = (int)spriteSize.x;
     currentSpriteRect.h = (int)spriteSize.y;
-    
-    animCooldown = clip.animCooldown; // Calculate animation cooldown based on length and number of frames 
 
-    onComplete = new Event();
+    animCooldown = clip.animCooldown; // Calculate animation cooldown based on length and number of frames
+
+    onComplete = new Event<>();
 }
 
 AnimationClip::~AnimationClip() {
@@ -376,7 +387,7 @@ void AnimationClip::AdvanceFrame() {
             }
         }
     }
-    
+
     currentSpriteRect.x = currentSprite * spriteSize.x;
     currentSpriteRect.y = 0;
 }
@@ -399,12 +410,11 @@ Animator::Animator(GameObject *gameObject, std::vector<AnimationClip> clips) : C
     }
     currentClip = &(this->clips.begin()->second);
 
-    if (gameObject->GetComponent<SpriteRenderer>()){
+    if (gameObject->GetComponent<SpriteRenderer>()) {
         std::pair<SDL_Texture *, SDL_Rect> spriteInfo = currentClip->GetCurrentSpriteInfo();
         gameObject->GetComponent<SpriteRenderer>()->spriteSheet = spriteInfo.first;
         gameObject->GetComponent<SpriteRenderer>()->spriteRect = spriteInfo.second;
     }
-
 
     currentClip->Ready();
 }
@@ -441,7 +451,7 @@ void Animator::Stop() {
     currentClip->isPlaying = false;
 }
 
-AnimationClip * Animator::GetCurrentClip(){
+AnimationClip *Animator::GetCurrentClip() {
     return currentClip;
 }
 
@@ -525,6 +535,7 @@ SceneManager::~SceneManager() {
         delete pair.second;
     }
     scenes.clear();
+    delete CollisionManager::GetInstance();
     delete GameObjectManager::GetInstance();
 }
 
@@ -535,22 +546,21 @@ SceneManager *SceneManager::GetInstance() {
     return instance;
 }
 
-
 void SceneManager::RunLogic() {
     if (currentScene) {
         currentScene->RunLogic();
     }
 }
 
-void SceneManager::AddGameObject(GameObject *gameObject){
+void SceneManager::AddGameObject(GameObject *gameObject) {
     GameObjectManager::GetInstance()->AddGameObject(gameObject);
 }
 
-void SceneManager::RemoveGameObject(std::string name){
+void SceneManager::RemoveGameObject(std::string name) {
     GameObjectManager::GetInstance()->RemoveGameObject(name);
 }
 
-GameObject *SceneManager::GetGameObject(std::string name){
+GameObject *SceneManager::GetGameObject(std::string name) {
     return GameObjectManager::GetInstance()->GetGameObject(name);
 }
 
@@ -571,6 +581,7 @@ Scene *SceneManager::GetCurrentScene() {
 }
 
 void SceneManager::Update() {
+    CollisionManager::GetInstance()->Update();
     GameObjectManager::GetInstance()->Update();
 }
 

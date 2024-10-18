@@ -9,9 +9,54 @@
 #include <utility>
 #include <vector>
 
-
 class GameObject;
-class Event;
+
+// Event
+template <typename... Args>
+class Event {
+public:
+    using Handler = std::function<void(Args...)>;
+
+    Event() {}
+    ~Event() { handlers.clear(); }
+
+    void addHandler(Handler handler) {
+        handlers.push_back(handler);
+    }
+
+    void raise(Args... args) {
+        for (auto &handler : handlers) {
+            handler(std::forward<Args>(args)...);
+        }
+    }
+
+private:
+    std::vector<Handler> handlers;
+};
+
+// Specialization for no arguments
+template <>
+class Event<> {
+public:
+    using Handler = std::function<void()>;
+
+    Event() {}
+    ~Event() { handlers.clear(); }
+
+    void addHandler(Handler handler) {
+        handlers.push_back(handler);
+    }
+
+    void raise() {
+        for (auto &handler : handlers) {
+            handler();
+        }
+    }
+
+private:
+    std::vector<Handler> handlers;
+};
+
 class Vector2 {
 public:
     float x, y;
@@ -20,10 +65,10 @@ public:
     Vector2 operator+(Vector2 v);
     Vector2 operator-(Vector2 v);
     Vector2 operator*(float f);
-    float   operator*(Vector2 v);
+    float operator*(Vector2 v);
     Vector2 operator/(float f);
     Vector2 operator+=(Vector2 v);
-    
+
     float Magnitude();
     Vector2 Normalize();
     float Distance(Vector2 v);
@@ -95,8 +140,8 @@ private:
     SDL_Rect currentSpriteRect;
     std::string name;
     float length = 0;
-    
-    //Only used in cloning, by another AnimationClip
+
+    // Only used in cloning, by another AnimationClip
 
 public:
     bool loop = false, isPlaying = false;
@@ -107,12 +152,12 @@ public:
 
     float speedScale = 0, animCooldown = 0, lastFrameTime = 0, startTime = 0;
 
-    Event *onComplete = nullptr;
-    
+    Event<> *onComplete = nullptr;
+
     AnimationClip();
     AnimationClip(std::string name, std::string path, Vector2 spriteSize, float length, bool loop, float speedScale, int startSprite, int endSprite);
     AnimationClip(const AnimationClip &clip);
-    
+
     ~AnimationClip();
 
     std::string GetName();
@@ -146,7 +191,7 @@ public:
 
 class Transform {
 public:
-    float rotation; //Only for the Z axis
+    float rotation; // Only for the Z axis
     Vector2 position, scale;
     Transform();
     Transform(Vector2 position, float rotation, Vector2 scale);
@@ -167,7 +212,7 @@ public:
 
     std::string GetName();
 
-    void AddComponent(Component *component);
+    Component *AddComponent(Component *component);
 
     template <typename T>
     T *GetComponent();
@@ -185,28 +230,6 @@ T *GameObject::GetComponent() {
     }
     return nullptr;
 }
-
-// Event
-class Event {
-public:
-    using Handler = std::function<void()>;
-
-    Event() {}
-    ~Event() { handlers.clear(); }
-
-    void addHandler(Handler handler) {
-        handlers.push_back(handler);
-    }
-
-    void raise() {
-        for (auto &handler : handlers) {
-            handler();
-        }
-    }
-
-private:
-    std::vector<Handler> handlers;
-};
 
 // More like a template for the GameObjectManager
 class Scene {
