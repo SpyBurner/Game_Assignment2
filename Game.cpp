@@ -1,12 +1,13 @@
-#include "Game.hpp"
 #include "CustomClasses.hpp"
-#include "Global.hpp"
-#include "Helper.hpp"
 #include "Components.hpp"
+#include "Game.hpp"
+#include "Global.hpp"
 #include "Physic2D.hpp"
+#include "Helper.hpp"
 
 #include <cmath>
 #include <iostream>
+
 
 SDL_Event Game::event;
 
@@ -68,8 +69,8 @@ void Game::objectInit() {
 
 #pragma region Ball Setup
     GameObject *ball = new GameObject("Ball");
-    ball->tag = "Ball";
-    ball->transform.position = Vector2(640, 360);
+    ball->tag = 3;
+    ball->transform.position = Vector2(640, 100);
     ball->transform.scale = Vector2(2, 2);
 
     ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), 10, LoadSpriteSheet("Assets/default.png")));
@@ -83,12 +84,14 @@ void Game::objectInit() {
     ball->AddComponent(new StayInBounds(ball, false));
 
     ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
-    // ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
-    //     [ball](Collider2D *collider) {
-    //         Rigidbody2D *rigidbody = ball->GetComponent<Rigidbody2D>();
-    //         rigidbody->BounceOff(collider->GetNormal(ball->transform.position));
-    //     }
-    // );
+
+    ball->AddComponent(new BallStateMachine(ball, 2.0, 700, 100));
+
+    ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
+        [ball](Collider2D *collider) {
+            ball->GetComponent<BallStateMachine>()->OnCollisionEnter(collider);
+        }
+    );
 
     mainScene->AddGameObject(ball);
 #pragma endregion
@@ -110,11 +113,11 @@ void Game::objectInit() {
         GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(100, 300), 0, Vector2(2, 2));
 
         GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(1125, 300), 0, Vector2(2, 2));
-        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(1125, 420), 0, Vector2(2, 2));
-    GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(1200, 360), 0, Vector2(2, 2));
+        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(1125, 360), 0, Vector2(2, 2));
+    GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(1200, 420), 0, Vector2(2, 2));
 
-    player1->tag = player2->tag = player3->tag = "1";
-    player4->tag = player5->tag = player6->tag = "2";
+    player1->tag = player2->tag = player3->tag = 1;
+    player4->tag = player5->tag = player6->tag = 2;
 
     player1->AddComponent(new Animator(player1, {AnimationClip("Run", "Assets/Sprites/football.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
     player2->AddComponent(new Animator(player2, {AnimationClip("Run", "Assets/Sprites/football2.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
@@ -126,16 +129,9 @@ void Game::objectInit() {
     auto setupCollisionHandler = [](GameObject *player) {
         player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
             [player](Collider2D *collider) {
-                Rigidbody2D *rigidbody = player->GetComponent<Rigidbody2D>();
-                if (collider->gameObject->tag == "Ball") {
-                    if (rigidbody->velocity.Magnitude() > 0.1)
-                        collider->gameObject->GetComponent<Rigidbody2D>()->AddForce(rigidbody->velocity);
-                    else{
-                        Vector2 normal = collider->GetNormal(player->transform.position);
-                        rigidbody->BounceOff(normal);
-                    }
-                    return;
-
+                if (collider->gameObject->tag == 4){
+                    Rigidbody2D *rigidbody = player->GetComponent<Rigidbody2D>();
+                    rigidbody->BounceOff(collider->GetNormal(player->transform.position));
                 }
             }
         );
@@ -152,15 +148,27 @@ void Game::objectInit() {
     player2->AddComponent(new MovementController(player2, 10, true));
     player3->AddComponent(new MovementController(player3, 10, true));
 
-    player4->AddComponent(new MovementController(player4, 10, false));
-    player5->AddComponent(new MovementController(player5, 10, false));
-    player6->AddComponent(new MovementController(player6, 10, false));
+    if (Player2Mode) {
+        player4->AddComponent(new MovementController(player4, 10, false));
+        player5->AddComponent(new MovementController(player5, 10, false));
+        player6->AddComponent(new MovementController(player6, 10, false));
+    }
+
+    player1->AddComponent(new KickControl(player1, ball, SDLK_SPACE, HIGH_KICK_FORCE));
+    player2->AddComponent(new KickControl(player2, ball, SDLK_SPACE, LOW_KICK_FORCE));
+    player3->AddComponent(new KickControl(player3, ball, SDLK_SPACE, HIGH_KICK_FORCE));
+
+    if (Player2Mode) {
+        player4->AddComponent(new KickControl(player4, ball, SDLK_KP_ENTER, HIGH_KICK_FORCE));
+        player5->AddComponent(new KickControl(player5, ball, SDLK_KP_ENTER, LOW_KICK_FORCE));
+        player6->AddComponent(new KickControl(player6, ball, SDLK_KP_ENTER, HIGH_KICK_FORCE));
+    }
 
     player1->AddComponent(new AIGoalKeeper(player1, ball, 10, true));
     player2->AddComponent(new AIDefender(player2, ball, 10, true));
     player3->AddComponent(new AIAttacker(player3, ball, 10, true));
 
-    player4->AddComponent(new AIAttacker(player6, ball, 10, false));
+    player4->AddComponent(new AIAttacker(player4, ball, 10, false));
     player5->AddComponent(new AIDefender(player5, ball, 10, false));
     player6->AddComponent(new AIGoalKeeper(player6, ball, 10, false));
 
@@ -174,15 +182,17 @@ void Game::objectInit() {
     movementControllerSwitcher1->AddMovementController(SDLK_3, player3->GetComponent<MovementController>());
     mainScene->AddGameObject(controllerSwitcher1);
 
-    // Second controller switcher for player4, player5, and player6
-    GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
-    TeamControl* movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
-        new TeamControl(controllerSwitcher2, LoadSpriteSheet("Assets/red_indicator.png"), 75.0)
-    ));
-    movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
-    movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
-    movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
-    mainScene->AddGameObject(controllerSwitcher2);
+    if (Player2Mode) {
+        // Second controller switcher for player4, player5, and player6
+        GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
+        TeamControl* movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
+            new TeamControl(controllerSwitcher2, LoadSpriteSheet("Assets/red_indicator.png"), 75.0)
+        ));
+        movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
+        movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
+        movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
+        mainScene->AddGameObject(controllerSwitcher2);
+    }
 
     mainScene->AddGameObject(player1);
     mainScene->AddGameObject(player2);

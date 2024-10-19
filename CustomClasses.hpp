@@ -112,6 +112,8 @@ private:
 
 class Component {
 public:
+    bool enabled = true;
+    
     GameObject *gameObject = nullptr;
     Component(GameObject *parent);
     virtual ~Component();
@@ -213,7 +215,7 @@ private:
 
 public:
     Transform transform;
-    std::string tag = "Default";
+    int tag = 0;
 
     GameObject();
     GameObject(std::string name);

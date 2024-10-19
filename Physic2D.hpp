@@ -31,8 +31,6 @@ public:
 };
 
 class Collider2D : public Component {
-protected:
-
 public:
     Vector2 offset;
     Event<Collider2D *> OnCollisionEnter;
