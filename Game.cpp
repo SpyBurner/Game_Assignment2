@@ -148,23 +148,27 @@ void Game::objectInit() {
     player2->AddComponent(new MovementController(player2, 10, true));
     player3->AddComponent(new MovementController(player3, 10, true));
 
-    // player4->AddComponent(new MovementController(player4, 10, false));
-    // player5->AddComponent(new MovementController(player5, 10, false));
-    // player6->AddComponent(new MovementController(player6, 10, false));
+    if (Player2Mode) {
+        player4->AddComponent(new MovementController(player4, 10, false));
+        player5->AddComponent(new MovementController(player5, 10, false));
+        player6->AddComponent(new MovementController(player6, 10, false));
+    }
 
-    player1->AddComponent(new KickControl(player1, ball, SDLK_SPACE, 17));
-    player2->AddComponent(new KickControl(player2, ball, SDLK_SPACE, 12));
-    player3->AddComponent(new KickControl(player3, ball, SDLK_SPACE, 12));
+    player1->AddComponent(new KickControl(player1, ball, SDLK_SPACE, HIGH_KICK_FORCE));
+    player2->AddComponent(new KickControl(player2, ball, SDLK_SPACE, LOW_KICK_FORCE));
+    player3->AddComponent(new KickControl(player3, ball, SDLK_SPACE, HIGH_KICK_FORCE));
 
-    player4->AddComponent(new KickControl(player4, ball, SDLK_KP_ENTER, 12));
-    player5->AddComponent(new KickControl(player5, ball, SDLK_KP_ENTER, 12));
-    player6->AddComponent(new KickControl(player6, ball, SDLK_KP_ENTER, 17));
+    if (Player2Mode) {
+        player4->AddComponent(new KickControl(player4, ball, SDLK_KP_ENTER, HIGH_KICK_FORCE));
+        player5->AddComponent(new KickControl(player5, ball, SDLK_KP_ENTER, LOW_KICK_FORCE));
+        player6->AddComponent(new KickControl(player6, ball, SDLK_KP_ENTER, HIGH_KICK_FORCE));
+    }
 
     player1->AddComponent(new AIGoalKeeper(player1, ball, 10, true));
     player2->AddComponent(new AIDefender(player2, ball, 10, true));
     player3->AddComponent(new AIAttacker(player3, ball, 10, true));
 
-    player4->AddComponent(new AIAttacker(player6, ball, 10, false));
+    player4->AddComponent(new AIAttacker(player4, ball, 10, false));
     player5->AddComponent(new AIDefender(player5, ball, 10, false));
     player6->AddComponent(new AIGoalKeeper(player6, ball, 10, false));
 
@@ -178,15 +182,17 @@ void Game::objectInit() {
     movementControllerSwitcher1->AddMovementController(SDLK_3, player3->GetComponent<MovementController>());
     mainScene->AddGameObject(controllerSwitcher1);
 
-    // // Second controller switcher for player4, player5, and player6
-    // GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
-    // TeamControl* movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
-    //     new TeamControl(controllerSwitcher2, LoadSpriteSheet("Assets/red_indicator.png"), 75.0)
-    // ));
-    // movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
-    // movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
-    // movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
-    // mainScene->AddGameObject(controllerSwitcher2);
+    if (Player2Mode) {
+        // Second controller switcher for player4, player5, and player6
+        GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
+        TeamControl* movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
+            new TeamControl(controllerSwitcher2, LoadSpriteSheet("Assets/red_indicator.png"), 75.0)
+        ));
+        movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
+        movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
+        movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
+        mainScene->AddGameObject(controllerSwitcher2);
+    }
 
     mainScene->AddGameObject(player1);
     mainScene->AddGameObject(player2);
