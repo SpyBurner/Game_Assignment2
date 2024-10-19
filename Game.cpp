@@ -64,7 +64,7 @@ void Game::objectInit() {
     std::cout << "Object Initialisation..." << std::endl;
 
     Scene *mainScene = new Scene("Main");
-    mainScene->AssignLogic([mainScene]() {
+    mainScene->AssignLogic([mainScene, this]() {
 
 #pragma region Background Setup
         GameObject *background = new GameObject("Background");
@@ -117,13 +117,13 @@ void Game::objectInit() {
         player1->AddComponent(new VelocityToAnimSpeedController(player1, "Run"));
 
 
-        player1->transform.position = Vector2(75, HEIGHT / 2); // Centered vertically
-        GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(150, HEIGHT / 2 + 60), 0, Vector2(2, 2));
-        GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(150, HEIGHT / 2 - 60), 0, Vector2(2, 2));
+        player1->transform.position = Vector2(100, HEIGHT / 2); // Centered vertically
+        GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(175, HEIGHT / 2 + 60), 0, Vector2(2, 2));
+        GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(175, HEIGHT / 2 - 60), 0, Vector2(2, 2));
 
-        GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(WIDTH - 150, HEIGHT / 2 - 60), 0, Vector2(2, 2));
-        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(WIDTH - 150, HEIGHT / 2), 0, Vector2(2, 2));
-        GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(WIDTH - 75, HEIGHT / 2 + 60), 0, Vector2(2, 2));
+        GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(WIDTH - 175, HEIGHT / 2 - 60), 0, Vector2(2, 2));
+        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(WIDTH - 175, HEIGHT / 2), 0, Vector2(2, 2));
+        GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(WIDTH - 100, HEIGHT / 2 + 60), 0, Vector2(2, 2));
 
         player1->tag = player2->tag = player3->tag = 1;
         player4->tag = player5->tag = player6->tag = 2;
@@ -221,14 +221,13 @@ void Game::objectInit() {
         ));
 
         goal1->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler(
-            [goal1](Collider2D *collider) {
+            [goal1, this](Collider2D *collider) {
                 BoxCollider2D *goal1Col = goal1->GetComponent<BoxCollider2D>();
                 if (collider->gameObject->tag == 3) {
                     if (goal1Col->GetNormal(collider->gameObject->transform.position) == Vector2(1, 0)) {
                         std::cout << "Goal!!! Right team scored!" << std::endl;
-                        SDL_UserEvent event;
-                        event.type = SDL_GOAL1_EVENT_TYPE;
-                        SDL_PushEvent((SDL_Event *)&event);
+                        this->scoreTeam2++;
+                        SceneManager::GetInstance()->LoadScene("Main");
                     } else {
                         Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
                         rigidbody->BounceOff(goal1Col->GetNormal(collider->gameObject->transform.position));
@@ -253,16 +252,13 @@ void Game::objectInit() {
         ));
 
         goal2->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler(
-            [goal2](Collider2D *collider) {
+            [goal2, this](Collider2D *collider) {
                 BoxCollider2D *goal2Col = goal2->GetComponent<BoxCollider2D>();
                 if (collider->gameObject->tag == 3) {
                     if (goal2Col->GetNormal(collider->gameObject->transform.position) == Vector2(-1, 0)) {
                         std::cout << "Goal!!! Left team scored!" << std::endl;
-
-                        SDL_UserEvent event;
-                        event.type = SDL_GOAL2_EVENT_TYPE;
-                        SDL_PushEvent((SDL_Event *)&event);
-
+                        this->scoreTeam1++;
+                        SceneManager::GetInstance()->LoadScene("Main");
                         return;
                     } else {
                         Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
@@ -310,19 +306,20 @@ void Game::update() {
 
 void Game::render() {
     SDL_RenderClear(renderer);
+    SceneManager::GetInstance()->Draw();
 
     // Show score
     SDL_Color textColor = {0, 0, 0, 255};
     std::string scoreText = std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
-    SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 24);
+    SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
     if (scoreTexture) {
-        RenderTexture(scoreTexture, 640, 360);
+        RenderTexture(scoreTexture, 640, 20);
         SDL_DestroyTexture(scoreTexture);
     } else {
         std::cerr << "Failed to load score texture" << std::endl;
     }
 
-    SceneManager::GetInstance()->Draw();
+
     SDL_RenderPresent(renderer);
 }
 

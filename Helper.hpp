@@ -204,7 +204,7 @@ void RenderTexture(SDL_Texture* texture, int x, int y) {
     SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
 
     // Define the destination rectangle
-    SDL_Rect destRect = { x, y, width, height };
+    SDL_Rect destRect = { x - width/2, y - height/2, width, height };
 
     // Render the texture
     SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
