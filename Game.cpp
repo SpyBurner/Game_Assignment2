@@ -6,7 +6,6 @@
 #include "Physic2D.hpp"
 #include "SDLCustomEvent.hpp"
 
-
 #include <cmath>
 #include <iostream>
 
@@ -41,6 +40,13 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
         }
 
         RENDERER = renderer;
+
+        // Initialize SDL_ttf
+        if (TTF_Init() == -1) {
+            std::cerr << "Failed to initialize TTF: " << TTF_GetError() << std::endl;
+            isRunning = false;
+            return;
+        }
 
         isRunning = true;
     } else {
@@ -205,12 +211,14 @@ void Game::objectInit() {
 
 #pragma region Goal Setup
         GameObject *goal1 = new GameObject("Goal1");
-        goal1->transform.position = Vector2(40, 360);
-        goal1->transform.scale = Vector2(2, 2);
+        goal1->transform.position = Vector2(30, 360);
+        goal1->transform.scale = Vector2(5, 4);
         goal1->tag = 5;
 
-        goal1->AddComponent(new SpriteRenderer(goal1, Vector2(50, 100), 0, LoadSpriteSheet("Assets/Sprites/goal.png")));
-        goal1->AddComponent(new BoxCollider2D(goal1, Vector2(0, 0), Vector2(50, 100)));
+        goal1->AddComponent(new SpriteRenderer(goal1, Vector2(16, 53), 0, LoadSpriteSheet("Assets/Sprites/goal.png")));
+        goal1->AddComponent(new BoxCollider2D(goal1, Vector2(0, 0), 
+            Vector2(16 * goal1->transform.scale.x, 53 * goal1->transform.scale.y)
+        ));
 
         goal1->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler(
             [goal1](Collider2D *collider) {
@@ -234,13 +242,15 @@ void Game::objectInit() {
         GameObjectManager::GetInstance()->AddGameObject(goal1);
 
         GameObject *goal2 = new GameObject("Goal2");
-        goal2->transform.position = Vector2(1240, 360);
+        goal2->transform.position = Vector2(1250, 360);
         goal2->transform.rotation = 180;
-        goal2->transform.scale = Vector2(2, 2);
+        goal2->transform.scale = Vector2(5, 4);
         goal2->tag = 6;
 
-        goal2->AddComponent(new SpriteRenderer(goal2, Vector2(50, 100), 0, LoadSpriteSheet("Assets/Sprites/goal.png")));
-        goal2->AddComponent(new BoxCollider2D(goal2, Vector2(0, 0), Vector2(50, 100)));
+        goal2->AddComponent(new SpriteRenderer(goal2, Vector2(16, 53), 0, LoadSpriteSheet("Assets/Sprites/goal.png")));
+        goal2->AddComponent(new BoxCollider2D(goal2, Vector2(0, 0), 
+            Vector2(16 * goal2->transform.scale.x, 53 * goal2->transform.scale.y)
+        ));
 
         goal2->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler(
             [goal2](Collider2D *collider) {
@@ -301,6 +311,17 @@ void Game::update() {
 void Game::render() {
     SDL_RenderClear(renderer);
 
+    // Show score
+    SDL_Color textColor = {0, 255, 0, 255};
+    std::string scoreText = std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
+    SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 24);
+    if (scoreTexture) {
+        RenderTexture(scoreTexture, 640, 20);
+        SDL_DestroyTexture(scoreTexture);
+    } else {
+        std::cerr << "Failed to load score texture" << std::endl;
+    }
+
     SceneManager::GetInstance()->Draw();
     SDL_RenderPresent(renderer);
 }
@@ -315,6 +336,8 @@ void Game::clean() {
 
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
+    // Quit SDL_ttf
+    TTF_Quit();
     SDL_Quit();
     std::cout << "Game cleaned..." << std::endl;
 }

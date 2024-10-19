@@ -41,7 +41,7 @@ public:
     void OnCollisionEnter(Collider2D *other) {
         if (currentState == FREE) {
             // Bind to any player except the one with tag 4
-            if (other->gameObject->tag != 4) {
+            if (other->gameObject->tag == 1 || other->gameObject->tag == 2) {
                 Bind(other->gameObject, true);
             }
         } else if (currentState == BINDED) {
@@ -74,6 +74,11 @@ public:
             if (lastBindedBy != nullptr) {
                 Rigidbody2D *boundRigidbody = lastBindedBy->GetComponent<Rigidbody2D>();
                 CircleCollider2D *boundCollider = lastBindedBy->GetComponent<CircleCollider2D>();
+
+                if (boundRigidbody == nullptr || boundCollider == nullptr) {
+                    currentState = FREE;
+                    return;
+                }
 
                 if (boundRigidbody->velocity.Magnitude() > 0.1f) {
                     lastBindedVelocity = boundRigidbody->velocity;
