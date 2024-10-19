@@ -88,6 +88,16 @@ void Game::objectInit() {
     ball->AddComponent(new RollSpeedController(ball));
     ball->AddComponent(new StayInBounds(ball, false));
 
+    GameObject* player = new GameObject("Player");
+    player->AddComponent(new SpriteRenderer(player, Vector2(32, 32), LoadSpriteSheet("Assets/Sprites/football.png")));
+    player->AddComponent(new Animator(player, { AnimationClip("Run", "Assets/Sprites/football.png", Vector2(32, 32), 1000, true, 1.0, 0, 5) }));
+    player->GetComponent<Animator>()->Play("Run");
+    player->transform.position = Vector2(150,320);
+    player->transform.scale = Vector2(3, 3);
+    player->transform.rotation = (90);
+    player->AddComponent(new Rigidbody2D(player, 1, 0.025, 0.95));
+    player->AddComponent(new RollSpeedController(player));
+
     CircleCollider2D *cColl = dynamic_cast<CircleCollider2D *>(ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5)));
     cColl->OnCollisionEnter.addHandler(
         [ball](Collider2D *collider) {
@@ -97,7 +107,7 @@ void Game::objectInit() {
     );
 
     mainScene->AddGameObject(ball);
-
+    mainScene->AddGameObject(player);
     // Instantiate 4 walls around the border of the screen
 
     // Another wall (example: middle wall)
