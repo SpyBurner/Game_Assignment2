@@ -5,23 +5,30 @@
 #include "CustomClasses.hpp"
 #include "Physic2D.hpp"
 
-class RollSpeedController : public Component {
+class VelocityToAnimSpeedController : public Component {
 private:
-    Rigidbody2D *rigidbody;
-    Animator *animator;
+    Rigidbody2D *rigidbody = nullptr;
+    Animator *animator = nullptr;
+    std::string animName;
 
 public:
-    RollSpeedController(GameObject *parent) : Component(parent) {
-        this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
-        this->animator = this->gameObject->GetComponent<Animator>();
+    VelocityToAnimSpeedController(GameObject *parent, std::string animName) : Component(parent) {
+        this->animName = animName;
     }
 
-    ~RollSpeedController() {}
+    ~VelocityToAnimSpeedController() {}
 
     void Update() {
+        if (this->rigidbody == nullptr || this->animator == nullptr){
+            this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
+            this->animator = this->gameObject->GetComponent<Animator>();
+        }
+
+        if (this->rigidbody == nullptr || this->animator == nullptr) return;
+
         if (this->rigidbody->velocity.Magnitude() > 0.0){
-            if (animator->GetCurrentClip()->isPlaying == false)
-                animator->Play("Roll");
+            if (animator->GetClip(animName)->isPlaying == false)
+                animator->Play(animName);
             animator->GetCurrentClip()->speedScale = this->rigidbody->velocity.Magnitude();
         }
         else{
@@ -33,7 +40,7 @@ public:
     void Draw() {}
 
     Component *Clone(GameObject *parent) {
-        RollSpeedController *newRollSpeedController = new RollSpeedController(parent);
+        VelocityToAnimSpeedController *newRollSpeedController = new VelocityToAnimSpeedController(parent, this->animName);
         return newRollSpeedController;
     }
 };

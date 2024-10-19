@@ -86,6 +86,16 @@ float Vector2::Cross(Vector2 v1, Vector2 v2) {
     return v1.x * v2.y - v1.y * v2.x;
 }
 
+float Vector2::Angle(Vector2 v1, Vector2 v2) {
+    float angle = std::acos(v1.Dot(v2) / (v1.Magnitude() * v2.Magnitude()));
+    return angle * (180.0f / M_PI); // Convert radians to degrees
+}
+
+float Vector2::SignedAngle(Vector2 v1, Vector2 v2) {
+    float angle = std::atan2(v2.y, v2.x) - std::atan2(v1.y, v1.x);
+    return angle * (180.0f / M_PI); // Convert radians to degrees
+}
+
 #pragma endregion
 
 #pragma region GameObjectManager

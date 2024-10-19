@@ -77,6 +77,10 @@ public:
     static float Dot(Vector2 v1, Vector2 v2);
     float Cross(Vector2 v);
     static float Cross(Vector2 v1, Vector2 v2);
+
+    static float Angle(Vector2 v1, Vector2 v2);
+
+    static float SignedAngle(Vector2 v1, Vector2 v2);
 };
 
 Vector2 operator*(float f, Vector2 v);
