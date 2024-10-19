@@ -152,14 +152,14 @@ void Game::objectInit() {
         setupCollisionHandler(player5);
         setupCollisionHandler(player6);
 
-        player1->AddComponent(new MovementController(player1, 10, true));
-        player2->AddComponent(new MovementController(player2, 10, true));
-        player3->AddComponent(new MovementController(player3, 10, true));
+        player1->AddComponent(new MovementController(player1, GoalKeeperSpeed, true));
+        player2->AddComponent(new MovementController(player2, DefenderSpeed, true));
+        player3->AddComponent(new MovementController(player3, AttackerSpeed, true));
 
         if (Player2Mode) {
-            player4->AddComponent(new MovementController(player4, 10, false));
-            player5->AddComponent(new MovementController(player5, 10, false));
-            player6->AddComponent(new MovementController(player6, 10, false));
+            player4->AddComponent(new MovementController(player4, AttackerSpeed, false));
+            player5->AddComponent(new MovementController(player5, DefenderSpeed, false));
+            player6->AddComponent(new MovementController(player6, GoalKeeperSpeed, false));
         }
 
         player1->AddComponent(new KickControl(player1, ball, SDLK_SPACE, HIGH_KICK_FORCE));
@@ -172,13 +172,13 @@ void Game::objectInit() {
             player6->AddComponent(new KickControl(player6, ball, SDLK_KP_ENTER, HIGH_KICK_FORCE));
         }
 
-        player1->AddComponent(new AIGoalKeeper(player1, ball, 10, true));
-        player2->AddComponent(new AIDefender(player2, ball, 10, true));
-        player3->AddComponent(new AIAttacker(player3, ball, 10, true));
+        player1->AddComponent(new AIGoalKeeper(player1, ball, GoalKeeperSpeed, true));
+        player2->AddComponent(new AIDefender(player2, ball, DefenderSpeed, true));
+        player3->AddComponent(new AIAttacker(player3, ball, AttackerSpeed, true));
 
-        player4->AddComponent(new AIAttacker(player4, ball, 10, false));
-        player5->AddComponent(new AIDefender(player5, ball, 10, false));
-        player6->AddComponent(new AIGoalKeeper(player6, ball, 10, false));
+        player4->AddComponent(new AIAttacker(player4, ball, AttackerSpeed, false));
+        player5->AddComponent(new AIDefender(player5, ball, DefenderSpeed, false));
+        player6->AddComponent(new AIGoalKeeper(player6, ball, GoalKeeperSpeed, false));
 
         // First controller switcher for player1, player2, and player3
         GameObject *controllerSwitcher1 = new GameObject("ControllerSwitcher1");
@@ -312,11 +312,11 @@ void Game::render() {
     SDL_RenderClear(renderer);
 
     // Show score
-    SDL_Color textColor = {0, 255, 0, 255};
+    SDL_Color textColor = {0, 0, 0, 255};
     std::string scoreText = std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
     SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 24);
     if (scoreTexture) {
-        RenderTexture(scoreTexture, 640, 20);
+        RenderTexture(scoreTexture, 640, 360);
         SDL_DestroyTexture(scoreTexture);
     } else {
         std::cerr << "Failed to load score texture" << std::endl;
