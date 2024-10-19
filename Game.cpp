@@ -132,7 +132,6 @@ void Game::objectInit() {
 
     player1->AddComponent(new SpriteRenderer(player1, Vector2(31, 82), 0, LoadSpriteSheet("Assets/actor.png")));
     player1->AddComponent(new Rigidbody2D(player1, 1, 0.04, .2));
-    //offset (0, 30)
     player1->AddComponent(new CircleCollider2D(player1, Vector2(0, 0), 17 * player1->transform.scale.x));
     player1->AddComponent(new StayInBounds(player1, false));
     
@@ -156,6 +155,7 @@ void Game::objectInit() {
                         rigidbody->BounceOff(normal);
                     }
                     return;
+
                 }
             }
         );
@@ -187,7 +187,9 @@ void Game::objectInit() {
 
     // First controller switcher for player1, player2, and player3
     GameObject *controllerSwitcher1 = new GameObject("ControllerSwitcher1");
-    MovementControllerSwitcher* movementControllerSwitcher1 = dynamic_cast<MovementControllerSwitcher *>(controllerSwitcher1->AddComponent(new MovementControllerSwitcher(controllerSwitcher1)));
+    TeamControl* movementControllerSwitcher1 = dynamic_cast<TeamControl *>(controllerSwitcher1->AddComponent(
+        new TeamControl(controllerSwitcher1, LoadSpriteSheet("Assets/blue_indicator.png"), 50.0)
+    ));
     movementControllerSwitcher1->AddMovementController(SDLK_1, player1->GetComponent<MovementController>());
     movementControllerSwitcher1->AddMovementController(SDLK_2, player2->GetComponent<MovementController>());
     movementControllerSwitcher1->AddMovementController(SDLK_3, player3->GetComponent<MovementController>());
@@ -195,7 +197,9 @@ void Game::objectInit() {
 
     // Second controller switcher for player4, player5, and player6
     GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
-    MovementControllerSwitcher* movementControllerSwitcher2 = dynamic_cast<MovementControllerSwitcher *>(controllerSwitcher2->AddComponent(new MovementControllerSwitcher(controllerSwitcher2)));
+    TeamControl* movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
+        new TeamControl(controllerSwitcher2, LoadSpriteSheet("Assets/red_indicator.png"), 50.0)
+    ));
     movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
     movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
     movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());

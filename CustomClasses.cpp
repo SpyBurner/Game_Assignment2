@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <list>
 // INIT STATIC
 GameObjectManager *GameObjectManager::instance = nullptr;
 SceneManager *SceneManager::instance = nullptr;
@@ -146,23 +147,28 @@ void GameObjectManager::Update() {
 
 //Draw ordered by SpriteRenderer drawOrder
 void GameObjectManager::Draw() {
-    std::vector<GameObject *> sortedGameObjects;
+
+    std::list<GameObject *> sortedGameObjects;
     for (auto &pair : gameObjects) {
         if (pair.second->GetComponent<SpriteRenderer>() == nullptr) {
+            sortedGameObjects.push_front(pair.second);
             continue;
         }
         sortedGameObjects.push_back(pair.second);
     }
 
-    std::sort(sortedGameObjects.begin(), sortedGameObjects.end(), [](GameObject *a, GameObject *b) {
+    sortedGameObjects.sort([](GameObject *a, GameObject *b) {
         SpriteRenderer *aRenderer = a->GetComponent<SpriteRenderer>();
         SpriteRenderer *bRenderer = b->GetComponent<SpriteRenderer>();
 
-        if (aRenderer->GetDrawOrder() == bRenderer->GetDrawOrder()) {
+        int sortOrderA = aRenderer ? aRenderer->GetDrawOrder() : 0;
+        int sortOrderB = bRenderer ? bRenderer->GetDrawOrder() : 0;
+
+        if (sortOrderA == sortOrderB) {
             return a->transform.position.y < b->transform.position.y;
         }
         
-        return aRenderer->GetDrawOrder() < bRenderer->GetDrawOrder();
+        return sortOrderA < sortOrderB;
     });
 
     for (auto &gameObject : sortedGameObjects) {
