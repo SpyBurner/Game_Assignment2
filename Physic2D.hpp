@@ -61,6 +61,7 @@ public:
     void AddCollider(Collider2D *collider);
     void RemoveCollider(Collider2D *collider);
     void Update();
+    void Clear();
 };
 
 class CircleCollider2D;

@@ -147,6 +147,9 @@ GameObject *GameObjectManager::GetGameObject(std::string name) {
 }
 
 void GameObjectManager::Clear() {
+    for (auto &pair : gameObjects) {
+        delete pair.second;
+    }
     gameObjects.clear();
 }
 
@@ -528,10 +531,6 @@ Scene::Scene(std::string name) {
 }
 
 Scene::~Scene() {
-    for (auto &pair : gameObjects) {
-        delete pair.second;
-    }
-    gameObjects.clear();
 }
 
 void Scene::AssignLogic(std::function<void()> logic) {
@@ -544,28 +543,12 @@ void Scene::RunLogic() {
     }
 }
 
-void Scene::AddGameObject(GameObject *gameObject) {
-    gameObjects[gameObject->GetName()] = gameObject;
-}
-
-void Scene::RemoveGameObject(std::string name) {
-    auto it = gameObjects.find(name);
-    if (it != gameObjects.end()) {
-        delete it->second;
-        gameObjects.erase(it);
-    }
-}
-
 void Scene::Load() {
     // Clear all objects
     GameObjectManager::GetInstance()->Clear();
+    CollisionManager::GetInstance()->Clear();
 
-    for (auto &pair : gameObjects) {
-        //BROKEN
-        // GameObject *newObject = GameObject::Instantiate(pair.second->GetName(), pair.second, pair.second->transform.position, pair.second->transform.rotation, pair.second->transform.scale);
-        // GameObjectManager::GetInstance()->AddGameObject(newObject);
-        GameObjectManager::GetInstance()->AddGameObject(pair.second);
-    }
+    RunLogic();
 }
 
 std::string Scene::GetName() {

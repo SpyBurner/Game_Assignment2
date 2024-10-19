@@ -93,6 +93,7 @@ private:
     std::map<std::string, GameObject *> gameObjects;
     GameObjectManager();
     static GameObjectManager *instance;
+public:
 
     ~GameObjectManager();
 
@@ -106,9 +107,6 @@ private:
     void Update();
     void Draw();
 
-    friend class SceneManager;
-    friend class Scene;
-    friend class GameObject;
 };
 
 class Component {
@@ -248,7 +246,6 @@ T *GameObject::GetComponent() {
 // More like a template for the GameObjectManager
 class Scene {
 private:
-    std::map<std::string, GameObject *> gameObjects;
     std::string name;
 
     std::function<void()> logic;
@@ -259,9 +256,6 @@ public:
 
     void AssignLogic(std::function<void()> logic);
     void RunLogic();
-
-    void AddGameObject(GameObject *gameObject);
-    void RemoveGameObject(std::string name);
 
     void Load();
 
