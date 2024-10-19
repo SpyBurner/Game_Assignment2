@@ -4,6 +4,9 @@
 #include "Global.hpp"
 #include "CustomClasses.hpp"
 #include "Physic2D.hpp"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+
 
 // Player cosmetics
 class RotateTowardVelocity : public Component {
@@ -35,7 +38,6 @@ public:
         rigidbody = gameObject->GetComponent<Rigidbody2D>();
     }
 };
-
 
 class VelocityToAnimSpeedController : public Component {
 private:
@@ -162,6 +164,49 @@ public:
     }
 };
 
+SDL_Texture* LoadFontTexture(const std::string& text, const std::string& fontPath, SDL_Color color, int fontSize) {
+    // Load the font
+    TTF_Font* font = TTF_OpenFont(fontPath.c_str(), fontSize);
+    if (!font) {
+        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+        return nullptr;
+    }
 
+    // Render the text to a surface
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), color);
+    if (!textSurface) {
+        std::cerr << "Failed to create text surface: " << TTF_GetError() << std::endl;
+        TTF_CloseFont(font);
+        return nullptr;
+    }
 
+    // Create a texture from the surface
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(RENDERER, textSurface);
+    if (!textTexture) {
+        std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
+    }
+
+    // Clean up
+    SDL_FreeSurface(textSurface);
+    TTF_CloseFont(font);
+
+    return textTexture;
+}
+
+void RenderTexture(SDL_Texture* texture, int x, int y) {
+    if (!texture) {
+        std::cerr << "Texture is null" << std::endl;
+        return;
+    }
+
+    // Query the texture to get its width and height
+    int width, height;
+    SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
+
+    // Define the destination rectangle
+    SDL_Rect destRect = { x - width/2, y - height/2, width, height };
+
+    // Render the texture
+    SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
+}
 #endif // HELPER_HPP

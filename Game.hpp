@@ -16,11 +16,16 @@ public:
     void clean();
 
     bool running();
+    bool reseting();
 
     static SDL_Event event;
 
+    int scoreTeam1 = 0;
+    int scoreTeam2 = 0;
+
 private: 
     bool isRunning;
+    bool reset = false;
     SDL_Window *window;
     SDL_Renderer *renderer;    
 };

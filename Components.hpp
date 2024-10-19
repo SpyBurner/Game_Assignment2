@@ -3,9 +3,10 @@
 
 #include "CustomClasses.hpp"
 #include "Game.hpp"
-#include "Physic2D.hpp"
 #include "Helper.hpp"
+#include "Physic2D.hpp"
 #include "cmath"
+
 
 class BallStateMachine : public Component {
 private:
@@ -21,8 +22,8 @@ private:
 
     float bindCooldown = 0;
     float lastBindTime = 0;
-public:
 
+public:
     enum State {
         FREE,
         BINDED,
@@ -41,7 +42,7 @@ public:
     void OnCollisionEnter(Collider2D *other) {
         if (currentState == FREE) {
             // Bind to any player except the one with tag 4
-            if (other->gameObject->tag != 4) {
+            if (other->gameObject->tag == 1 || other->gameObject->tag == 2) {
                 Bind(other->gameObject, true);
             }
         } else if (currentState == BINDED) {
@@ -75,6 +76,11 @@ public:
                 Rigidbody2D *boundRigidbody = lastBindedBy->GetComponent<Rigidbody2D>();
                 CircleCollider2D *boundCollider = lastBindedBy->GetComponent<CircleCollider2D>();
 
+                if (boundRigidbody == nullptr || boundCollider == nullptr) {
+                    currentState = FREE;
+                    return;
+                }
+
                 if (boundRigidbody->velocity.Magnitude() > 0.1f) {
                     lastBindedVelocity = boundRigidbody->velocity;
                 }
@@ -95,16 +101,17 @@ public:
             lastKickedBy = kicker;
             lastKickedTime = SDL_GetTicks();
 
-            //Set bindcooldown;
-            lastBindTime = SDL_GetTicks();            
+            // Set bindcooldown;
+            lastBindTime = SDL_GetTicks();
 
-            //Set backup rigidbody
+            // Set backup rigidbody
             gameObject->GetComponent<VelocityToAnimSpeedController>()->SetBackupRigidbody(nullptr);
         }
     }
 
     void Bind(GameObject *binder, bool ignoreCooldown = false) {
-        if (SDL_GetTicks() - lastBindTime < bindCooldown && !ignoreCooldown) return;
+        if (SDL_GetTicks() - lastBindTime < bindCooldown && !ignoreCooldown)
+            return;
 
         lastBindTime = SDL_GetTicks();
         currentState = BINDED;
@@ -115,16 +122,17 @@ public:
 
     void Draw() {}
 
-    GameObject* GetBinded(){
-        if (currentState == BINDED) return lastBindedBy;
-        else return nullptr;
+    GameObject *GetBinded() {
+        if (currentState == BINDED)
+            return lastBindedBy;
+        else
+            return nullptr;
     }
 
     Component *Clone(GameObject *parent) {
         BallStateMachine *newBallStateMachine = new BallStateMachine(parent, kickedStateMinSpeed, bindCooldown, bounceKickerCooldown);
         return newBallStateMachine;
     }
-
 
 private:
     State currentState;
@@ -198,7 +206,7 @@ public:
         return enabled;
     }
 
-    void ClearSpeed(){
+    void ClearSpeed() {
         upSpeed = 0;
         downSpeed = 0;
         leftSpeed = 0;
@@ -249,8 +257,7 @@ public:
                     static_cast<int>(currentObject->transform.position.x - indicatorRadius / 2),
                     static_cast<int>(currentObject->transform.position.y - indicatorRadius / 2),
                     static_cast<int>(indicatorRadius),
-                    static_cast<int>(indicatorRadius)
-                };
+                    static_cast<int>(indicatorRadius)};
                 SDL_RenderCopy(RENDERER, indicator, nullptr, &rect);
             }
         }
@@ -258,12 +265,11 @@ public:
 
     void AddMovementController(int keyBind, MovementController *movementController) {
         movementControllers[keyBind] = movementController;
-        
+
         // Enable only the first movement controller when adding
         if (movementControllers.size() > 1) {
             movementController->Disable();
-        }
-        else{
+        } else {
             // set the current key to the first key binded
             currentKey = keyBind;
         }
@@ -293,11 +299,12 @@ private:
     SDL_KeyCode kickKey = SDLK_SPACE;
 
     GameObject *ball = nullptr;
-    BallStateMachine* ballStateMachine = nullptr;
+    BallStateMachine *ballStateMachine = nullptr;
 
     float kickForce;
+
 public:
-    KickControl(GameObject *parent, GameObject* ball, SDL_KeyCode kickKey, float kickForce) : Component(parent) {
+    KickControl(GameObject *parent, GameObject *ball, SDL_KeyCode kickKey, float kickForce) : Component(parent) {
         this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
         this->ball = ball;
         this->kickKey = kickKey;
@@ -308,8 +315,10 @@ public:
     }
 
     void Update() {
-        if (rigidbody == nullptr || ballStateMachine == nullptr) return;
-        if (!gameObject->GetComponent<MovementController>() || !gameObject->GetComponent<MovementController>()->GetEnabled()) return;
+        if (rigidbody == nullptr || ballStateMachine == nullptr)
+            return;
+        if (!gameObject->GetComponent<MovementController>() || !gameObject->GetComponent<MovementController>()->GetEnabled())
+            return;
 
         if (Game::event.type == SDL_KEYDOWN) {
             if (Game::event.key.keysym.sym == kickKey) {
@@ -367,21 +376,21 @@ public:
     AIGoalKeeper(GameObject *parent, GameObject *target, float speed, bool isTeam1) : AIController(parent, target, speed, isTeam1) {
         if (isTeam1) {
             dangerZoneXStart = 0;
-            dangerZoneXEnd = 25.0f / 100.0f * WIDTH;
+            dangerZoneXEnd = 20.0f / 100.0f * WIDTH;
 
-            alertZoneXStart = 25.0f / 100.0f * WIDTH;
-            alertZoneXEnd = 50.0f / 100.0f * WIDTH;
+            alertZoneXStart = 20.0f / 100.0f * WIDTH;
+            alertZoneXEnd = 60.0f / 100.0f * WIDTH;
 
         } else {
-            dangerZoneXStart = 75.0f / 100.0f * WIDTH;
+            dangerZoneXStart = 80.0f / 100.0f * WIDTH;
             dangerZoneXEnd = 100.0f / 100.0f * WIDTH;
 
-            alertZoneXStart = 50.0f / 100.0f * WIDTH;
-            alertZoneXEnd = 75.0f / 100.0f * WIDTH;
+            alertZoneXStart = 40.0f / 100.0f * WIDTH;
+            alertZoneXEnd = 80.0f / 100.0f * WIDTH;
         }
 
-        dangerZoneYStart = 40.0f / 100.0f * HEIGHT;
-        dangerZoneYEnd = 60.0f / 100.0f * HEIGHT;
+        dangerZoneYStart = 0.0f / 100.0f * HEIGHT;
+        dangerZoneYEnd = 100.0f / 100.0f * HEIGHT;
 
         this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
     }
@@ -395,38 +404,41 @@ public:
         float actualSpeed = speed * 1 / FPS;
 
         Vector2 targetPosition = target->transform.position;
+        Rigidbody2D *targetRigidbody = target->GetComponent<Rigidbody2D>();
+
         Vector2 currentPosition = gameObject->transform.position;
 
-        GameObject* ballBindedBy = target->GetComponent<BallStateMachine>()->GetBinded();
+        GameObject *ballBindedBy = target->GetComponent<BallStateMachine>()->GetBinded();
         bool teamHasBall = ballBindedBy != nullptr && ballBindedBy->tag == gameObject->tag;
 
         // Binded to ball
-        if (ballBindedBy != nullptr && ballBindedBy == gameObject){
-            target->GetComponent<BallStateMachine>()->Kick(Vector2(isTeam1? 1 : -1, 0), HIGH_KICK_FORCE, gameObject);
-        }
-        else
-        // Target is in the alert zone
-        if (targetPosition.x >= alertZoneXStart && targetPosition.x <= alertZoneXEnd && !teamHasBall) {
-            if (targetPosition.y < currentPosition.y) {
-                rigidbody->AddForce(Vector2(0, -1).Normalize() * actualSpeed);
-            } else if (targetPosition.y > currentPosition.y) {
-                rigidbody->AddForce(Vector2(0, 1).Normalize() * actualSpeed);
+        if (ballBindedBy != nullptr && ballBindedBy == gameObject) {
+            target->GetComponent<BallStateMachine>()->Kick(Vector2(isTeam1 ? 1 : -1, 0), HIGH_KICK_FORCE, gameObject);
+        } else
+            // Target is in the alert zone
+            if (targetPosition.x >= alertZoneXStart && targetPosition.x <= alertZoneXEnd && !teamHasBall) {
+
+                if (targetPosition.y < currentPosition.y) {
+                    rigidbody->AddForce(Vector2(0, -1).Normalize() * actualSpeed);
+                } else if (targetPosition.y > currentPosition.y) {
+                    rigidbody->AddForce(Vector2(0, 1).Normalize() * actualSpeed);
+                }
             }
-        }
 
-        // Target is in the danger zone
-        else if (targetPosition.x >= dangerZoneXStart && targetPosition.x <= dangerZoneXEnd &&
-                 targetPosition.y >= dangerZoneYStart && targetPosition.y <= dangerZoneYEnd && !teamHasBall) {
-            Vector2 direction = (targetPosition - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is in the danger zone
+            else if (targetPosition.x >= dangerZoneXStart && targetPosition.x <= dangerZoneXEnd &&
+                     targetPosition.y >= dangerZoneYStart && targetPosition.y <= dangerZoneYEnd && !teamHasBall) {
+                Vector2 direction = (targetPosition - currentPosition).Normalize();
+                // Prioritize running toward target position y
+                rigidbody->AddForce((direction + targetRigidbody->velocity).Normalize() * actualSpeed); 
+            }
 
-        // Target is neither, restore original position, or team has control of ball
-        else {
-            Vector2 dangerZoneCenter((dangerZoneXStart + dangerZoneXEnd) / 2, (dangerZoneYStart + dangerZoneYEnd) / 2);
-            Vector2 direction = (dangerZoneCenter - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is neither, restore original position, or team has control of ball
+            else {
+                Vector2 dangerZoneCenter((dangerZoneXStart + dangerZoneXEnd) / 2, (dangerZoneYStart + dangerZoneYEnd) / 2);
+                Vector2 direction = (dangerZoneCenter - currentPosition).Normalize();
+                rigidbody->AddForce(direction * actualSpeed);
+            }
     }
 
     Component *Clone(GameObject *parent) {
@@ -466,33 +478,32 @@ public:
         Vector2 targetPosition = target->transform.position;
         Vector2 currentPosition = gameObject->transform.position;
 
-        GameObject* ballBindedBy = target->GetComponent<BallStateMachine>()->GetBinded();
+        GameObject *ballBindedBy = target->GetComponent<BallStateMachine>()->GetBinded();
         bool teamHasBall = ballBindedBy != nullptr && ballBindedBy->tag == gameObject->tag;
 
         // Binded to ball
-        if (ballBindedBy != nullptr && ballBindedBy == gameObject){
-            target->GetComponent<BallStateMachine>()->Kick(Vector2(isTeam1? 1 : -1, 0), LOW_KICK_FORCE, gameObject);
-        }
-        else
+        if (ballBindedBy != nullptr && ballBindedBy == gameObject) {
+            target->GetComponent<BallStateMachine>()->Kick(Vector2(isTeam1 ? 1 : -1, 0), LOW_KICK_FORCE, gameObject);
+        } else
 
-        // Target is in the alert zone
-        if (targetPosition.x >= alertZoneXStart && targetPosition.x <= alertZoneXEnd) {
-            Vector2 direction = (targetPosition - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is in the alert zone
+            if (targetPosition.x >= alertZoneXStart && targetPosition.x <= alertZoneXEnd) {
+                Vector2 direction = (targetPosition - currentPosition).Normalize();
+                rigidbody->AddForce(direction * actualSpeed);
+            }
 
-        // Target is in the danger zone
-        else if (targetPosition.x >= dangerZoneXStart && targetPosition.x <= dangerZoneXEnd) {
-            Vector2 direction = (targetPosition - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is in the danger zone
+            else if (targetPosition.x >= dangerZoneXStart && targetPosition.x <= dangerZoneXEnd) {
+                Vector2 direction = (targetPosition - currentPosition).Normalize();
+                rigidbody->AddForce(direction * actualSpeed);
+            }
 
-        // Target is neither, restore original position
-        else {
-            Vector2 dangerZoneCenter((dangerZoneXStart + dangerZoneXEnd) / 2, WIDTH / 2);
-            Vector2 direction = (dangerZoneCenter - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is neither, restore original position
+            else {
+                Vector2 dangerZoneCenter((dangerZoneXStart + dangerZoneXEnd) / 2, WIDTH / 2);
+                Vector2 direction = (dangerZoneCenter - currentPosition).Normalize();
+                rigidbody->AddForce(direction * actualSpeed);
+            }
     }
 
     Component *Clone(GameObject *parent) {
@@ -532,7 +543,7 @@ public:
         Vector2 targetPosition = target->transform.position;
         Vector2 currentPosition = gameObject->transform.position;
 
-        GameObject* ballBindedBy = target->GetComponent<BallStateMachine>()->GetBinded();
+        GameObject *ballBindedBy = target->GetComponent<BallStateMachine>()->GetBinded();
         bool teamHasBall = ballBindedBy != nullptr && ballBindedBy->tag == gameObject->tag;
 
         // Binded to ball
@@ -566,24 +577,24 @@ public:
             rigidbody->AddForce(direction * actualSpeed);
         } else
 
-        // Target is in the alert zone
-        if (targetPosition.x >= alertZoneXStart && targetPosition.x <= alertZoneXEnd) {
-            Vector2 direction = (targetPosition - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is in the alert zone
+            if (targetPosition.x >= alertZoneXStart && targetPosition.x <= alertZoneXEnd) {
+                Vector2 direction = (targetPosition - currentPosition).Normalize();
+                rigidbody->AddForce(direction * actualSpeed);
+            }
 
-        // Target is in the danger zone
-        else if (targetPosition.x >= dangerZoneXStart && targetPosition.x <= dangerZoneXEnd) {
-            Vector2 direction = (targetPosition - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is in the danger zone
+            else if (targetPosition.x >= dangerZoneXStart && targetPosition.x <= dangerZoneXEnd) {
+                Vector2 direction = (targetPosition - currentPosition).Normalize();
+                rigidbody->AddForce(direction * actualSpeed);
+            }
 
-        // Target is neither, restore original position
-        else {
-            Vector2 dangerZoneCenter((dangerZoneXStart + dangerZoneXEnd) / 2, currentPosition.y);
-            Vector2 direction = (dangerZoneCenter - currentPosition).Normalize();
-            rigidbody->AddForce(direction * actualSpeed);
-        }
+            // Target is neither, restore original position
+            else {
+                Vector2 dangerZoneCenter((dangerZoneXStart + dangerZoneXEnd) / 2, currentPosition.y);
+                Vector2 direction = (dangerZoneCenter - currentPosition).Normalize();
+                rigidbody->AddForce(direction * actualSpeed);
+            }
     }
 
     Component *Clone(GameObject *parent) {
@@ -591,6 +602,5 @@ public:
         return newAIAttacker;
     }
 };
-
 
 #endif

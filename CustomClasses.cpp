@@ -21,6 +21,10 @@ Vector2::Vector2() : x(0), y(0) {}
 
 Vector2::Vector2(float x, float y) : x(x), y(y) {}
 
+bool Vector2::operator==(Vector2 v) {
+    return x == v.x && y == v.y;
+}
+
 Vector2 Vector2::operator+(Vector2 v) {
     return Vector2(x + v.x, y + v.y);
 }
@@ -527,10 +531,6 @@ Scene::Scene(std::string name) {
 }
 
 Scene::~Scene() {
-    for (auto &pair : gameObjects) {
-        delete pair.second;
-    }
-    gameObjects.clear();
 }
 
 void Scene::AssignLogic(std::function<void()> logic) {
@@ -543,25 +543,12 @@ void Scene::RunLogic() {
     }
 }
 
-void Scene::AddGameObject(GameObject *gameObject) {
-    gameObjects[gameObject->GetName()] = gameObject;
-}
-
-void Scene::RemoveGameObject(std::string name) {
-    auto it = gameObjects.find(name);
-    if (it != gameObjects.end()) {
-        delete it->second;
-        gameObjects.erase(it);
-    }
-}
-
 void Scene::Load() {
     // Clear all objects
     GameObjectManager::GetInstance()->Clear();
+    CollisionManager::GetInstance()->Clear();
 
-    for (auto &pair : gameObjects) {
-        GameObjectManager::GetInstance()->AddGameObject(pair.second);
-    }
+    RunLogic();
 }
 
 std::string Scene::GetName() {

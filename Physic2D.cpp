@@ -75,7 +75,6 @@ Collider2D::Collider2D(GameObject *parent, Vector2 offset) : Component(parent) {
 }
 
 Collider2D::~Collider2D() {
-    CollisionManager::GetInstance()->RemoveCollider(this);
 }
 
 void Collider2D::Update() {}
@@ -101,7 +100,7 @@ void CollisionManager::AddCollider(Collider2D *collider) {
 
 void CollisionManager::RemoveCollider(Collider2D *collider) {
     for (int i = 0; i < this->colliders.size(); i++) {
-        if (this->colliders[i]->gameObject->GetName() == collider->gameObject->GetName()) {
+        if (this->colliders[i] == collider) {
             this->colliders.erase(this->colliders.begin() + i);
             return;
         }
@@ -126,6 +125,9 @@ void CollisionManager::Update() {
     }
 }
 
+void CollisionManager::Clear() {
+    this->colliders.clear();
+}
 
 // CircleCollider2D Implementation
 CircleCollider2D::CircleCollider2D(GameObject *parent, Vector2 offset, float radius) : Collider2D(parent, offset) {
