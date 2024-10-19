@@ -40,23 +40,30 @@ public:
 
     void OnCollisionEnter(Collider2D *other) {
         if (currentState == FREE) {
-            if (other->gameObject->tag == 1 || other->gameObject->tag == 2) 
-                Bind(other->gameObject);
-        } else if (currentState == BINDED) {
-            if (other->gameObject->tag != gameObject->tag) {
+            // Bind to any player except the one with tag 4
+            if (other->gameObject->tag != 4) {
                 Bind(other->gameObject, true);
             }
+        } else if (currentState == BINDED) {
+            // Bind to a player with a different tag than the last player it was bound to
+            if (other->gameObject->tag != lastBindedBy->tag) {
+                Bind(other->gameObject);
+            }
         } else if (currentState == KICKED) {
-            if (other->gameObject->tag == 1 || other->gameObject->tag == 2) {
-                if (lastKickedBy == other->gameObject && SDL_GetTicks() - lastKickedTime < bounceKickerCooldown) return;
-
-                if (other->gameObject->tag == lastKickedBy->tag) {
-                    Bind(other->gameObject, true);
+            // If collided with the last kicker
+            if (other->gameObject == lastKickedBy) {
+                // Check if the cooldown has passed
+                if (SDL_GetTicks() - lastKickedTime > bounceKickerCooldown) {
+                    Bind(other->gameObject);
                 }
-                else{
-                    rigidbody->BounceOff(other->GetNormal(gameObject->transform.position));
-                }
-
+            }
+            // If collided with a teammate of the last player it was bound to
+            else if (other->gameObject->tag == lastBindedBy->tag) {
+                Bind(other->gameObject);
+            }
+            // Bounce off anything else
+            else {
+                rigidbody->BounceOff(other->GetNormal(gameObject->transform.position));
             }
         }
     }
@@ -65,9 +72,6 @@ public:
         std:: cout << currentState << std::endl;
 
         if (currentState == FREE) {
-            if (rigidbody->velocity.Magnitude() > maxSpeed) {
-                rigidbody->velocity = rigidbody->velocity.Normalize() * maxSpeed;
-            }
         } else if (currentState == BINDED) {
             if (lastBindedBy != nullptr) {
                 Rigidbody2D *boundRigidbody = lastBindedBy->GetComponent<Rigidbody2D>();
