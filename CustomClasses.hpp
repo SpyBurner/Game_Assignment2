@@ -215,7 +215,7 @@ private:
 
 public:
     Transform transform;
-    std::string tag = "Default";
+    int tag = 0;
 
     GameObject();
     GameObject(std::string name);

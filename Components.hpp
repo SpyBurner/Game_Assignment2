@@ -40,20 +40,18 @@ public:
 
     void OnCollisionEnter(Collider2D *other) {
         if (currentState == FREE) {
-            if (other->gameObject->tag == "1" || other->gameObject->tag == "2") 
+            if (other->gameObject->tag == 1 || other->gameObject->tag == 2) 
                 Bind(other->gameObject);
         } else if (currentState == BINDED) {
             if (other->gameObject->tag != gameObject->tag) {
-                Bind(other->gameObject);
+                Bind(other->gameObject, true);
             }
         } else if (currentState == KICKED) {
-            if (other->gameObject->tag == "1" || other->gameObject->tag == "2") {
+            if (other->gameObject->tag == 1 || other->gameObject->tag == 2) {
                 if (lastKickedBy == other->gameObject && SDL_GetTicks() - lastKickedTime < bounceKickerCooldown) return;
 
                 if (other->gameObject->tag == lastKickedBy->tag) {
                     Bind(other->gameObject, true);
-                    std::cout << "Kicked by" << lastKickedBy->GetName() << std::endl;
-                    std::cout << "Binded by" << other->gameObject->GetName() << std::endl;
                 }
                 else{
                     rigidbody->BounceOff(other->GetNormal(gameObject->transform.position));
@@ -306,7 +304,7 @@ public:
 
     void Update() {
         if (rigidbody == nullptr || ballStateMachine == nullptr) return;
-        if (!gameObject->GetComponent<MovementController>()->GetEnabled()) return;
+        if (!gameObject->GetComponent<MovementController>() || !gameObject->GetComponent<MovementController>()->GetEnabled()) return;
 
         if (Game::event.type == SDL_KEYDOWN) {
             if (Game::event.key.keysym.sym == kickKey) {
