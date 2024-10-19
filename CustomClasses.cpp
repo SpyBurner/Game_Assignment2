@@ -4,7 +4,8 @@
 #include <SDL2/SDL_image.h>
 #include <cmath>
 #include <iostream>
-
+#include <algorithm>
+#include <list>
 // INIT STATIC
 GameObjectManager *GameObjectManager::instance = nullptr;
 SceneManager *SceneManager::instance = nullptr;
@@ -144,9 +145,34 @@ void GameObjectManager::Update() {
     }
 }
 
+//Draw ordered by SpriteRenderer drawOrder
 void GameObjectManager::Draw() {
+
+    std::list<GameObject *> sortedGameObjects;
     for (auto &pair : gameObjects) {
-        pair.second->Draw();
+        if (pair.second->GetComponent<SpriteRenderer>() == nullptr) {
+            sortedGameObjects.push_front(pair.second);
+            continue;
+        }
+        sortedGameObjects.push_back(pair.second);
+    }
+
+    sortedGameObjects.sort([](GameObject *a, GameObject *b) {
+        SpriteRenderer *aRenderer = a->GetComponent<SpriteRenderer>();
+        SpriteRenderer *bRenderer = b->GetComponent<SpriteRenderer>();
+
+        int sortOrderA = aRenderer ? aRenderer->GetDrawOrder() : 0;
+        int sortOrderB = bRenderer ? bRenderer->GetDrawOrder() : 0;
+
+        if (sortOrderA == sortOrderB) {
+            return a->transform.position.y < b->transform.position.y;
+        }
+        
+        return sortOrderA < sortOrderB;
+    });
+
+    for (auto &gameObject : sortedGameObjects) {
+        gameObject->Draw();
     }
 }
 
@@ -196,7 +222,7 @@ Component *GameObject::AddComponent(Component *component) {
     return component;
 }
 
-GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, Vector2 position, float rotation, Vector2 scale) {
+GameObject *GameObject::Instantiate(std::string name, const GameObject *origin, Vector2 position, float rotation, Vector2 scale) {
     GameObject *newObject = new GameObject(name);
 
     newObject->transform.position = position;
@@ -204,13 +230,11 @@ GameObject *GameObject::Instantiate(std::string name, const GameObject &origin, 
     newObject->transform.scale = scale;
 
     // Deep copy components
-    for (auto &component : origin.components) {
+    for (auto &component : origin->components) {
         Component *newComponent = component->Clone(newObject);
         newObject->components.push_back(newComponent);
     }
 
-    // Add to manager
-    GameObjectManager::GetInstance()->AddGameObject(newObject);
     return newObject;
 }
 
@@ -231,7 +255,9 @@ Component::~Component() {}
 //     SpriteRenderer::renderer = renderer;
 // }
 
-SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, int drawOrder, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
+    this->drawOrder = drawOrder;
+
     this->spriteSheet = spriteSheet;
 
     this->spriteRect = SDL_Rect();
@@ -274,7 +300,7 @@ void SpriteRenderer::Draw() {
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
-    SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), spriteSheet);
+    SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), drawOrder, spriteSheet);
 
     return newRenderer;
 }
@@ -293,6 +319,10 @@ SDL_Texture *LoadSpriteSheet(std::string path) {
     TEXTURES.push_back(texture);
 
     return texture;
+}
+
+int SpriteRenderer::GetDrawOrder() {
+    return drawOrder;
 }
 
 #pragma endregion

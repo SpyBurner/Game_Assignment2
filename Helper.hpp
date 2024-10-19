@@ -20,6 +20,8 @@ public:
 
     void Update() {
         if (this->rigidbody->velocity.Magnitude() > 0.0){
+            if (animator->GetCurrentClip()->isPlaying == false)
+                animator->Play("Roll");
             animator->GetCurrentClip()->speedScale = this->rigidbody->velocity.Magnitude();
         }
         else{
@@ -49,7 +51,7 @@ public:
         Rigidbody2D *rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
         if (this->gameObject->transform.position.x < 0) {
             if (teleport){
-                this->gameObject->transform.position.x = WIDTH - 35;
+                this->gameObject->transform.position.x = WIDTH;
             }
             else{
                 if (rigidbody != nullptr)
@@ -58,7 +60,7 @@ public:
                     this->gameObject->transform.position.x = 0;
             }
         }
-        if (this->gameObject->transform.position.x > WIDTH - 35) {
+        if (this->gameObject->transform.position.x > WIDTH) {
             if (teleport){
                 this->gameObject->transform.position.x = 0;
             }
@@ -66,12 +68,12 @@ public:
                 if (rigidbody != nullptr)
                     rigidbody->BounceOff(Vector2(-1, 0));
                 else
-                    this->gameObject->transform.position.x = WIDTH - 35;
+                    this->gameObject->transform.position.x = WIDTH;
             }
         }
         if (this->gameObject->transform.position.y < 0) {
             if (teleport){
-                this->gameObject->transform.position.y = HEIGHT - 44;
+                this->gameObject->transform.position.y = HEIGHT;
             }
             else{
                 if (rigidbody != nullptr)
@@ -101,5 +103,7 @@ public:
         return newStayInBounds;
     }
 };
+
+
 
 #endif // HELPER_HPP

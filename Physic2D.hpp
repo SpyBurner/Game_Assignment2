@@ -32,9 +32,9 @@ public:
 
 class Collider2D : public Component {
 protected:
-    Vector2 offset;
 
 public:
+    Vector2 offset;
     Event<Collider2D *> OnCollisionEnter;
 
     Collider2D(GameObject *parent, Vector2 offset);

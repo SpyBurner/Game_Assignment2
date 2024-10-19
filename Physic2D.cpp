@@ -21,7 +21,6 @@ void Rigidbody2D::Update() {
     this->velocity = this->velocity * (1 - this->drag);
 
     const float MINIMUM_VELOCITY = 0.05f;
-
     if (this->velocity.Magnitude() < MINIMUM_VELOCITY) {
         this->velocity = Vector2(0, 0);
     }
@@ -50,10 +49,7 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
 
     this->acceleration = Vector2(0, 0);
 
-    // std::cout << "Bouncing off" << std::endl;
-    // std::cout << "Velocity before: " << this->velocity.x << ", " << this->velocity.y << std::endl;
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
-    // std::cout << "Velocity after: " << this->velocity.x << ", " << this->velocity.y << std::endl;
 }
 
 Vector2 Rigidbody2D::Reflect(Vector2 velocity, Vector2 normal) {
@@ -153,7 +149,11 @@ bool CircleCollider2D::CheckCollision(Collider2D *other) {
 }
 
 bool CircleCollider2D::CheckCollision(CircleCollider2D *other) {
-    return (this->gameObject->transform.position - other->gameObject->transform.position).Magnitude() < this->radius + other->radius;
+    Vector2 thisPosition = this->gameObject->transform.position + this->offset;
+    Vector2 otherPosition = other->gameObject->transform.position + other->offset;
+    
+    float distance = (thisPosition - otherPosition).Magnitude();
+    return distance < (this->radius + other->radius);
 }
 
 bool CircleCollider2D::CheckCollision(BoxCollider2D *other) {
@@ -235,15 +235,22 @@ Vector2 BoxCollider2D::GetNormal(Vector2 point) {
     return Vector2(0, 0);
 }
 
-//General Collision Functions
+// General Collision Functions
 bool CheckCollision(CircleCollider2D *circle, BoxCollider2D *box) {
+    // Calculate the circle's center with offset
+    Vector2 circleCenter = circle->gameObject->transform.position + circle->offset;
+
+    // Calculate the box's min and max points with offset
+    Vector2 boxMin = box->gameObject->transform.position - box->size / 2 + box->offset;
+    Vector2 boxMax = box->gameObject->transform.position + box->size / 2 + box->offset;
+
     // Find the closest point on the box to the circle
-    float closestX = std::max(box->gameObject->transform.position.x - box->size.x / 2, std::min(circle->gameObject->transform.position.x, box->gameObject->transform.position.x + box->size.x / 2));
-    float closestY = std::max(box->gameObject->transform.position.y - box->size.y / 2, std::min(circle->gameObject->transform.position.y, box->gameObject->transform.position.y + box->size.y / 2));
+    float closestX = std::max(boxMin.x, std::min(circleCenter.x, boxMax.x));
+    float closestY = std::max(boxMin.y, std::min(circleCenter.y, boxMax.y));
 
     // Calculate the distance between the circle's center and this closest point
-    float distanceX = circle->gameObject->transform.position.x - closestX;
-    float distanceY = circle->gameObject->transform.position.y - closestY;
+    float distanceX = circleCenter.x - closestX;
+    float distanceY = circleCenter.y - closestY;
 
     // If the distance is less than the circle's radius, an intersection occurs
     float distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
