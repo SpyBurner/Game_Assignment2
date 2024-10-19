@@ -112,6 +112,8 @@ private:
 
 class Component {
 public:
+    bool enabled = true;
+    
     GameObject *gameObject = nullptr;
     Component(GameObject *parent);
     virtual ~Component();

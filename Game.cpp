@@ -4,9 +4,11 @@
 #include "Helper.hpp"
 #include "Components.hpp"
 #include "Physic2D.hpp"
+#include "AI.hpp"
 
 #include <cmath>
 #include <iostream>
+
 
 SDL_Event Game::event;
 
@@ -69,7 +71,7 @@ void Game::objectInit() {
 #pragma region Ball Setup
     GameObject *ball = new GameObject("Ball");
     ball->tag = "Ball";
-    ball->transform.position = Vector2(640, 360);
+    ball->transform.position = Vector2(640, 100);
     ball->transform.scale = Vector2(2, 2);
 
     ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), 10, LoadSpriteSheet("Assets/default.png")));
@@ -83,12 +85,14 @@ void Game::objectInit() {
     ball->AddComponent(new StayInBounds(ball, false));
 
     ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
-    // ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
-    //     [ball](Collider2D *collider) {
-    //         Rigidbody2D *rigidbody = ball->GetComponent<Rigidbody2D>();
-    //         rigidbody->BounceOff(collider->GetNormal(ball->transform.position));
-    //     }
-    // );
+
+    ball->AddComponent(new BallStateMachine(ball, 10.0, 700));
+
+    ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
+        [ball](Collider2D *collider) {
+            ball->GetComponent<BallStateMachine>()->OnCollisionEnter(collider);
+        }
+    );
 
     mainScene->AddGameObject(ball);
 #pragma endregion
@@ -127,15 +131,8 @@ void Game::objectInit() {
         player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
             [player](Collider2D *collider) {
                 Rigidbody2D *rigidbody = player->GetComponent<Rigidbody2D>();
-                if (collider->gameObject->tag == "Ball") {
-                    if (rigidbody->velocity.Magnitude() > 0.1)
-                        collider->gameObject->GetComponent<Rigidbody2D>()->AddForce(rigidbody->velocity);
-                    else{
-                        Vector2 normal = collider->GetNormal(player->transform.position);
-                        rigidbody->BounceOff(normal);
-                    }
-                    return;
-
+                if (collider->gameObject->tag == "Wall"){
+                    rigidbody->BounceOff(collider->GetNormal(player->transform.position));
                 }
             }
         );

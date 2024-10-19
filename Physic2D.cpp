@@ -48,13 +48,13 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
     }
 
     this->acceleration = Vector2(0, 0);
-
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
 }
 
 Vector2 Rigidbody2D::Reflect(Vector2 velocity, Vector2 normal) {
     if (normal.Magnitude() < EPS) {
-        return Vector2(0, 0);
+        //Ensure minimum velocity
+        velocity = velocity.Normalize();
     }
     return velocity - 2 * (velocity.Dot(normal)) * normal;
 }
@@ -110,8 +110,11 @@ void CollisionManager::RemoveCollider(Collider2D *collider) {
 
 void CollisionManager::Update() {
     for (auto &collider1 : this->colliders) {
+        if (!collider1->enabled) {
+            continue;
+        }
         for (auto &collider2 : this->colliders) {
-            if (collider1->gameObject->GetName() == collider2->gameObject->GetName()) {
+            if (collider1->gameObject->GetName() == collider2->gameObject->GetName() || !collider2->enabled) {
                 continue;
             }
 

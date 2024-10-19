@@ -10,7 +10,7 @@ extern std::vector<SDL_Texture *> TEXTURES;
 //SETTINGS
 const int FPS = 60;
 const int WIDTH = 1280, HEIGHT = 720;
-const bool FULLSCREEN = true;
+const bool FULLSCREEN = false;
 
 #define EPS 0.0001
 
