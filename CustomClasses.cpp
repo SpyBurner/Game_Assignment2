@@ -21,6 +21,10 @@ Vector2::Vector2() : x(0), y(0) {}
 
 Vector2::Vector2(float x, float y) : x(x), y(y) {}
 
+bool Vector2::operator==(Vector2 v) {
+    return x == v.x && y == v.y;
+}
+
 Vector2 Vector2::operator+(Vector2 v) {
     return Vector2(x + v.x, y + v.y);
 }
@@ -143,9 +147,6 @@ GameObject *GameObjectManager::GetGameObject(std::string name) {
 }
 
 void GameObjectManager::Clear() {
-    for (auto &pair : gameObjects) {
-        delete pair.second;
-    }
     gameObjects.clear();
 }
 
@@ -560,6 +561,9 @@ void Scene::Load() {
     GameObjectManager::GetInstance()->Clear();
 
     for (auto &pair : gameObjects) {
+        //BROKEN
+        // GameObject *newObject = GameObject::Instantiate(pair.second->GetName(), pair.second, pair.second->transform.position, pair.second->transform.rotation, pair.second->transform.scale);
+        // GameObjectManager::GetInstance()->AddGameObject(newObject);
         GameObjectManager::GetInstance()->AddGameObject(pair.second);
     }
 }

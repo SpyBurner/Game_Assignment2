@@ -4,6 +4,7 @@
 #include "Global.hpp"
 #include "Physic2D.hpp"
 #include "Helper.hpp"
+#include "SDLCustomEvent.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -19,6 +20,7 @@ Game::~Game() {
 }
 
 void Game::init(const char *title, int xpos, int ypos, int width, int height, bool fullscreen) {
+    reset = false;
     int flags = 0;
     if (fullscreen) {
         flags = SDL_WINDOW_FULLSCREEN;
@@ -108,13 +110,13 @@ void Game::objectInit() {
     player1->AddComponent(new RotateTowardVelocity(player1, Vector2(0, -1)));
     player1->AddComponent(new VelocityToAnimSpeedController(player1, "Run"));
     
-    player1->transform.position = Vector2(25, 360);
-        GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(100, 420), 0, Vector2(2, 2));
-        GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(100, 300), 0, Vector2(2, 2));
+    player1->transform.position = Vector2(75, 360);
+        GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(150, 420), 0, Vector2(2, 2));
+        GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(150, 300), 0, Vector2(2, 2));
 
-        GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(1125, 300), 0, Vector2(2, 2));
-        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(1125, 360), 0, Vector2(2, 2));
-    GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(1200, 420), 0, Vector2(2, 2));
+        GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(1130, 300), 0, Vector2(2, 2));
+        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(1130, 360), 0, Vector2(2, 2));
+    GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(1205, 420), 0, Vector2(2, 2));
 
     player1->tag = player2->tag = player3->tag = 1;
     player4->tag = player5->tag = player6->tag = 2;
@@ -203,6 +205,66 @@ void Game::objectInit() {
 
 #pragma endregion
 
+#pragma region Goal Setup
+    GameObject *goal1 = new GameObject("Goal1");
+    goal1->transform.position = Vector2(15, 360);
+    goal1->transform.scale = Vector2(2, 2);
+    goal1->tag = 5;
+
+    goal1->AddComponent(new SpriteRenderer(goal1, Vector2(50, 100), 0, LoadSpriteSheet("Assets/wall.png")));
+    goal1->AddComponent(new BoxCollider2D(goal1, Vector2(0, 0), Vector2(50, 100)));
+
+    goal1->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler(
+        [goal1](Collider2D *collider) {
+            BoxCollider2D* goal1Col = goal1->GetComponent<BoxCollider2D>();
+            if (collider->gameObject->tag == 3){
+                if (goal1Col->GetNormal(collider->gameObject->transform.position) == Vector2(1, 0)){
+                    std::cout << "Goal!!! Right team scored!" << std::endl;
+                    SDL_UserEvent event;
+                    event.type = SDL_GOAL1_EVENT_TYPE;
+                    SDL_PushEvent((SDL_Event *)&event);
+
+                    return;
+                }
+            }
+            Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
+            rigidbody->BounceOff(goal1Col->GetNormal(collider->gameObject->transform.position));
+        }
+    );
+
+    mainScene->AddGameObject(goal1);
+
+    GameObject *goal2 = new GameObject("Goal2");
+    goal2->transform.position = Vector2(1265, 360);
+    goal2->transform.scale = Vector2(2, 2);
+    goal2->tag = 6;
+
+    goal2->AddComponent(new SpriteRenderer(goal2, Vector2(50, 100), 0, LoadSpriteSheet("Assets/wall.png")));
+    goal2->AddComponent(new BoxCollider2D(goal2, Vector2(0, 0), Vector2(50, 100)));
+
+    goal2->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler(
+        [goal2](Collider2D *collider) {
+            BoxCollider2D* goal2Col = goal2->GetComponent<BoxCollider2D>();
+            if (collider->gameObject->tag == 3){
+                if (goal2Col->GetNormal(collider->gameObject->transform.position) == Vector2(-1, 0)){
+                    std::cout << "Goal!!! Left team scored!" << std::endl;
+                    
+                    SDL_UserEvent event;
+                    event.type = SDL_GOAL2_EVENT_TYPE;
+                    SDL_PushEvent((SDL_Event *)&event);
+
+                    return;
+                }
+            }
+            Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
+            rigidbody->BounceOff(goal2Col->GetNormal(collider->gameObject->transform.position));
+        }
+    );
+
+    mainScene->AddGameObject(goal2);
+
+#pragma endregion
+
     SceneManager::GetInstance()->AddScene(mainScene);
     SceneManager::GetInstance()->LoadScene("Main");
 }
@@ -210,67 +272,32 @@ void Game::objectInit() {
 void Game::handleEvents() {
     
     SDL_PollEvent(&Game::event);
-    switch (event.type) {
-    case SDL_QUIT:
+
+    if (event.type == SDL_QUIT) {
         isRunning = false;
-        break;
-    default:
-        break;
+        return;
     }
+
+    if (event.type == SDL_GOAL1_EVENT_TYPE) {
+        std::cout << "Goal!!! Right team scored!" << std::endl;
+        reset = true;
+        return;
+    }
+
+    if (event.type == SDL_GOAL2_EVENT_TYPE) {
+        std::cout << "Goal!!! Left team scored!" << std::endl;
+        reset = true;
+        return;
+    }
+
 }
 
-float lastSpawnTime = -3000;
-float spawnCooldown = 3000;
-int spawnCount = 0;
-
-GameObject *previousObject = player;
-
 void Game::update() {
-    // Game logic updates go here
-
-#pragma region TEST ANIMATOR
-// TEST INSTANTIATE
-// if (SDL_GetTicks() - lastSpawnTime >= spawnCooldown) {
-//     GameObject *newObject = GameObject::Instantiate("Player" + std::to_string(spawnCount),
-//     *player, previousObject->transform.position + Vector2(30, 0), 0, Vector2(5, 5));
-//     lastSpawnTime = SDL_GetTicks();
-//     previousObject = newObject;
-//     spawnCount++;
-
-//     newObject->GetComponent<Animator>()->GetClip("Idle")->onComplete->addHandler(
-//         [newObject]() {
-//             newObject->GetComponent<Animator>()->Play("Float");
-//         }
-//     );
-
-//     newObject->GetComponent<Animator>()->GetClip("Float")->onComplete->addHandler(
-//         [newObject]() {
-//             newObject->GetComponent<Animator>()->Play("Idle");
-//         }
-//     );
-
-//     newObject->GetComponent<Animator>()->Play("Idle");
-// }
-//
-#pragma endregion
-
-#pragma region TEST PHYSIC2D
-    // GameObject *ball = SceneManager::GetInstance()->GetGameObject("Ball");
-
-    // Vector2 pos = ball->transform.position;
-    // Rigidbody2D *rigidbody = ball->GetComponent<Rigidbody2D>();
-    // // rigidbody->AddForce(Vector2(sin(SDL_GetTicks() / 1000.0), sin(SDL_GetTicks() / 1000.0 + 1 / 2 * 3.14)).Normalize() * 10);
-    // // rigidbody->AddForce(Vector2(2, 0));
-
-    // // std::cout << "Ball Position: " << pos.x << ", " << pos.y << std::endl;
-#pragma endregion
-
     SceneManager::GetInstance()->Update();
 }
 
 void Game::render() {
     SDL_RenderClear(renderer);
-    // Add your rend☺ering stuff here
 
     SceneManager::GetInstance()->Draw();
     SDL_RenderPresent(renderer);
@@ -292,4 +319,8 @@ void Game::clean() {
 
 bool Game::running() {
     return isRunning;
+}
+
+bool Game::reseting() {
+    return reset;
 }

@@ -16,11 +16,13 @@ public:
     void clean();
 
     bool running();
+    bool reseting();
 
     static SDL_Event event;
 
 private: 
     bool isRunning;
+    bool reset = false;
     SDL_Window *window;
     SDL_Renderer *renderer;    
 };

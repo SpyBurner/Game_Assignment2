@@ -1,6 +1,15 @@
 #ifndef GLOBALS_HPP
 #define GLOBALS_HPP
 
+/*GameObject tags:
+1 - Team1
+2 - Team2
+3 - Ball
+4 - Wall
+5 - Goal1
+6 - Goal2
+*/
+
 #include <SDL2/SDL.h>
 #include <vector>
 
