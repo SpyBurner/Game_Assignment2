@@ -5,6 +5,38 @@
 #include "CustomClasses.hpp"
 #include "Physic2D.hpp"
 
+// Player cosmetics
+class RotateTowardVelocity : public Component {
+private:
+    Vector2 originalForward = Vector2(0, -1);
+    Rigidbody2D *rigidbody = nullptr;
+    
+    Vector2 lastVelocity = Vector2(0, -1);
+
+    void Update(){
+        if (rigidbody == nullptr){
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+        }
+        if (rigidbody == nullptr) return;
+
+        if (rigidbody->velocity.Magnitude() > 0.1f) lastVelocity = rigidbody->velocity;
+        gameObject->transform.rotation = Vector2::SignedAngle(originalForward, lastVelocity);
+    }
+
+    void Draw() {}
+
+    Component *Clone(GameObject *parent) {
+        RotateTowardVelocity *newRotateTowardVelocity = new RotateTowardVelocity(parent, originalForward);
+        return newRotateTowardVelocity;
+    }
+public:
+    RotateTowardVelocity(GameObject *parent, Vector2 originalForward) : Component(parent) {
+        this->originalForward = originalForward;
+        rigidbody = gameObject->GetComponent<Rigidbody2D>();
+    }
+};
+
+
 class VelocityToAnimSpeedController : public Component {
 private:
     // Main Rigidbody to get speed from

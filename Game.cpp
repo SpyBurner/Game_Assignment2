@@ -1,10 +1,9 @@
-#include "Game.hpp"
 #include "CustomClasses.hpp"
-#include "Global.hpp"
-#include "Helper.hpp"
 #include "Components.hpp"
+#include "Game.hpp"
+#include "Global.hpp"
 #include "Physic2D.hpp"
-#include "AI.hpp"
+#include "Helper.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -86,7 +85,7 @@ void Game::objectInit() {
 
     ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
 
-    ball->AddComponent(new BallStateMachine(ball, 10.0, 700));
+    ball->AddComponent(new BallStateMachine(ball, 2.0, 700, 100));
 
     ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
         [ball](Collider2D *collider) {
@@ -114,8 +113,8 @@ void Game::objectInit() {
         GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(100, 300), 0, Vector2(2, 2));
 
         GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(1125, 300), 0, Vector2(2, 2));
-        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(1125, 420), 0, Vector2(2, 2));
-    GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(1200, 360), 0, Vector2(2, 2));
+        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(1125, 360), 0, Vector2(2, 2));
+    GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(1200, 420), 0, Vector2(2, 2));
 
     player1->tag = player2->tag = player3->tag = "1";
     player4->tag = player5->tag = player6->tag = "2";
@@ -153,6 +152,14 @@ void Game::objectInit() {
     player5->AddComponent(new MovementController(player5, 10, false));
     player6->AddComponent(new MovementController(player6, 10, false));
 
+    player1->AddComponent(new KickControl(player1, ball, SDLK_SPACE, 17));
+    player2->AddComponent(new KickControl(player2, ball, SDLK_SPACE, 12));
+    player3->AddComponent(new KickControl(player3, ball, SDLK_SPACE, 12));
+
+    player4->AddComponent(new KickControl(player4, ball, SDLK_KP_ENTER, 12));
+    player5->AddComponent(new KickControl(player5, ball, SDLK_KP_ENTER, 12));
+    player6->AddComponent(new KickControl(player6, ball, SDLK_KP_ENTER, 17));
+
     player1->AddComponent(new AIGoalKeeper(player1, ball, 10, true));
     player2->AddComponent(new AIDefender(player2, ball, 10, true));
     player3->AddComponent(new AIAttacker(player3, ball, 10, true));
@@ -181,12 +188,16 @@ void Game::objectInit() {
     movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
     mainScene->AddGameObject(controllerSwitcher2);
 
+    //Test
+    movementControllerSwitcher2->AddMovementController(SDLK_KP_7, player2->GetComponent<MovementController>());
+    //
+
     mainScene->AddGameObject(player1);
-    mainScene->AddGameObject(player2);
-    mainScene->AddGameObject(player3);
+    // mainScene->AddGameObject(player2);
+    // mainScene->AddGameObject(player3);
     mainScene->AddGameObject(player4);
-    mainScene->AddGameObject(player5);
-    mainScene->AddGameObject(player6);
+    // mainScene->AddGameObject(player5);
+    // mainScene->AddGameObject(player6);
 
 #pragma endregion
 
