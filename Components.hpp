@@ -15,6 +15,7 @@ private:
 
     GameObject *lastKickedBy = nullptr;
     float bounceKickerCooldown = 0;
+    
     float lastKickedTime = 0;
 
     GameObject *lastBindedBy = nullptr;
@@ -41,29 +42,27 @@ public:
 
     void OnCollisionEnter(Collider2D *other) {
         if (currentState == FREE) {
-            // Bind to any player except the one with tag 4
             if (other->gameObject->tag == 1 || other->gameObject->tag == 2) {
                 Bind(other->gameObject, true);
             }
-        } else if (currentState == BINDED) {
+        } else if (currentState == BINDED && other->gameObject->tag != lastBindedBy->tag) {
             // Bind to a player with a different tag than the last player it was bound to
-            if (other->gameObject->tag != lastBindedBy->tag) {
-                Bind(other->gameObject);
-            }
+            Bind(other->gameObject);
         } else if (currentState == KICKED) {
             // If collided with the last kicker
-            if (other->gameObject == lastKickedBy) {
-                // Check if the cooldown has passed
-                if (SDL_GetTicks() - lastKickedTime > bounceKickerCooldown) {
-                    Bind(other->gameObject);
-                }
+            // Check if the cooldown has passed
+            if (other->gameObject == lastKickedBy && SDL_GetTicks() - lastKickedTime > bounceKickerCooldown) {
+                Bind(other->gameObject);
             }
+
             // If collided with a teammate of the last player it was bound to
             else if (other->gameObject->tag == lastBindedBy->tag) {
                 Bind(other->gameObject);
             }
+
             // Bounce off anything else
             else {
+                SoundManager::GetInstance()->PlaySound("ball_bounce");
                 rigidbody->BounceOff(other->GetNormal(gameObject->transform.position));
             }
         }
@@ -96,6 +95,7 @@ public:
 
     void Kick(Vector2 direction, float force, GameObject *kicker) {
         if (currentState == BINDED) {
+            SoundManager::GetInstance()->PlaySound("ball_kick");
             currentState = KICKED;
             rigidbody->AddForce(direction * force);
             lastKickedBy = kicker;
@@ -116,6 +116,8 @@ public:
         lastBindTime = SDL_GetTicks();
         currentState = BINDED;
         lastBindedBy = binder;
+
+        rigidbody->velocity = Vector2(0, 0);
 
         gameObject->GetComponent<VelocityToAnimSpeedController>()->SetBackupRigidbody(binder->GetComponent<Rigidbody2D>());
     }
@@ -303,6 +305,7 @@ private:
 
     float kickForce;
 
+    Vector2 lastDirection = Vector2(0, 0);
 public:
     KickControl(GameObject *parent, GameObject *ball, SDL_KeyCode kickKey, float kickForce) : Component(parent) {
         this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
@@ -322,7 +325,10 @@ public:
 
         if (Game::event.type == SDL_KEYDOWN) {
             if (Game::event.key.keysym.sym == kickKey) {
-                ballStateMachine->Kick(rigidbody->velocity.Normalize(), kickForce, gameObject);
+                if (rigidbody->velocity.Magnitude() > 0.01f){
+                    lastDirection = rigidbody->velocity.Normalize();
+                }
+                ballStateMachine->Kick(lastDirection, kickForce, gameObject);
             }
         }
     }
@@ -430,7 +436,7 @@ public:
                      targetPosition.y >= dangerZoneYStart && targetPosition.y <= dangerZoneYEnd && !teamHasBall) {
                 Vector2 direction = (targetPosition - currentPosition).Normalize();
                 // Prioritize running toward target position y
-                rigidbody->AddForce((direction + targetRigidbody->velocity).Normalize() * actualSpeed); 
+                rigidbody->AddForce(Vector2(direction.x / 4, direction.y * 4) .Normalize() * actualSpeed); 
             }
 
             // Target is neither, restore original position, or team has control of ball
@@ -559,8 +565,8 @@ public:
             bool nearGoalTeam2 = (!isTeam1 && currentPosition.x <= 25.0f / 100.0f * WIDTH && currentPosition.x >= 15.0f / 100.0f * WIDTH);
 
             // Check if AI is behind the goal
-            bool behindGoalTeam1 = (isTeam1 && currentPosition.x > 95.0f / 100.0f * WIDTH);
-            bool behindGoalTeam2 = (!isTeam1 && currentPosition.x < 5.0f / 100.0f * WIDTH);
+            bool behindGoalTeam1 = (isTeam1 && currentPosition.x > 92.0f / 100.0f * WIDTH);
+            bool behindGoalTeam2 = (!isTeam1 && currentPosition.x < 8.0f / 100.0f * WIDTH);
 
             if (inOptimalYPosition && (nearGoalTeam1 || nearGoalTeam2)) {
                 target->GetComponent<BallStateMachine>()->Kick(direction, HIGH_KICK_FORCE, gameObject);
@@ -600,6 +606,48 @@ public:
     Component *Clone(GameObject *parent) {
         AIAttacker *newAIAttacker = new AIAttacker(parent, target, speed, isTeam1);
         return newAIAttacker;
+    }
+};
+
+class Button : public Component {
+private:
+    Collider2D *collider = nullptr;
+
+    Event<> *onClick = nullptr;
+public:
+
+    Button(GameObject *parent) : Component(parent) {
+        onClick = new Event<>();
+    }
+
+    ~Button() {
+        delete onClick;
+    }
+
+    void Update() {
+        if (collider == nullptr){
+            collider = gameObject->GetComponent<Collider2D>();
+            if (collider == nullptr) return;
+        }
+
+        if (Game::event.type == SDL_MOUSEBUTTONDOWN) {
+            Vector2 mousePosition = Vector2(Game::event.button.x, Game::event.button.y);
+            if (collider->CheckCollision(mousePosition)) {
+                this->onClick->raise();
+            }
+        }
+    }
+
+    void Draw() {}
+    
+    void AddOnClickHandler(std::function<void()> handler) {
+        onClick->addHandler(handler);
+    }
+
+    Component *Clone(GameObject *parent) {
+        Button *newButton = new Button(parent);
+        newButton->onClick = onClick;
+        return newButton;
     }
 };
 

@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include <SDL2/SDL_mixer.h>
+
 class GameObject;
 
 // Event
@@ -288,6 +290,39 @@ public:
 
     void Update();
     void Draw();
+};
+
+class SoundManager {
+private:
+    std::map<std::string, Mix_Music *> music;
+    std::map<std::string, Mix_Chunk *> sounds;
+
+    std::map<std::string, int> musicVolumes;
+    std::map<std::string, int> soundVolumes;
+
+    std::string currentMusic;
+
+    SoundManager();
+    static SoundManager *instance;
+public:
+    ~SoundManager();
+    static SoundManager *GetInstance();
+
+    void AddMusic(std::string name, std::string path, int volume);
+    void AddSound(std::string name, std::string path, int volume);
+
+    void PlayMusic(std::string name, int loops = -1);
+    void PlaySound(std::string name, int loops = 0);
+
+    void StopMusic();
+    void StopSound();
+
+    void PauseMusic();
+    void PauseSound();
+
+    void ResumeMusic();
+    void ResumeSound();
+
 };
 
 #endif

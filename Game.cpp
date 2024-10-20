@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <SDL2/SDL_mixer.h>
 
 SDL_Event Game::event;
 
@@ -21,6 +22,7 @@ Game::~Game() {
 void Game::init(const char *title, int xpos, int ypos, int width, int height, bool fullscreen) {
     reset = false;
     int flags = 0;
+    
     if (fullscreen) {
         flags = SDL_WINDOW_FULLSCREEN;
     }
@@ -35,7 +37,7 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
 
         renderer = SDL_CreateRenderer(window, -1, 0);
         if (renderer) {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_SetRenderDrawColor(renderer, 128, 239, 129, 255);
             std::cout << "Renderer created..." << std::endl;
         }
 
@@ -48,24 +50,136 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
             return;
         }
 
+        if (Mix_Init(MIX_INIT_MP3) == 0){
+            std::cerr << "Failed to initialize Mixer: " << Mix_GetError() << std::endl;
+            isRunning = false;
+            return;
+        }
+
         isRunning = true;
     } else {
         isRunning = false;
     }
 
+    state = MENU;
     objectInit();
 }
 
 GameObject *player = new GameObject("Player");
 
 void Game::objectInit() {
-    // Add your object initialisation here
+    
+    //Add sounds and music
+    SoundManager::GetInstance();
+    SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/fairyfountain.mp3", 100);
+    SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/papyrus.mp3", 64);
+
+    SoundManager::GetInstance()->AddSound("ball_bounce", "Assets/SFX/ball_bounce.mp3", 100);
+    SoundManager::GetInstance()->AddSound("ball_kick", "Assets/SFX/ball_kick.mp3", 128);
+
+    SoundManager::GetInstance()->AddSound("Game_Over", "Assets/SFX/gameover.mp3", 128);
+    SoundManager::GetInstance()->AddSound("Goal", "Assets/SFX/score.mp3", 64);
+
+    SoundManager::GetInstance()->AddSound("Cheer", "Assets/SFX/crowd_cheer.mp3", 64);
 
     std::cout << "Object Initialisation..." << std::endl;
 
-    Scene *mainScene = new Scene("Main");
-    mainScene->AssignLogic([mainScene, this]() {
+    Scene *menuScene = new Scene("MainMenu");
+    menuScene->AssignLogic([menuScene, this]() {
+        Game::state = MENU;
+        SoundManager::GetInstance()->PlayMusic("MenuBgm");
 
+        GameObject *title = new GameObject("Title");
+        title->transform.position = Vector2(640, 200);
+        title->transform.scale = Vector2(10, 10);
+        
+        title->AddComponent(new SpriteRenderer(title, Vector2(64, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Game_Name.png")));
+        title->AddComponent(new Animator(title, {AnimationClip("Idle", "Assets/Sprites/UI/Game_Name.png", Vector2(64, 16), 200, true, 1.0, 0, 1)}));
+        title->GetComponent<Animator>()->Play("Idle");
+        
+        GameObjectManager::GetInstance()->AddGameObject(title);
+
+        GameObject *playButtonSingle = new GameObject("PlayButton");
+        playButtonSingle->transform.position = Vector2(640, 400);
+        playButtonSingle->transform.scale = Vector2(5, 5);
+
+        playButtonSingle->AddComponent(new SpriteRenderer(playButtonSingle, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+
+        playButtonSingle->AddComponent(new BoxCollider2D(playButtonSingle, Vector2(0, 0), 
+            Vector2(32 * playButtonSingle->transform.scale.x, 16 * playButtonSingle->transform.scale.y)
+        ));
+
+        playButtonSingle->AddComponent(new Button(playButtonSingle));
+        playButtonSingle->GetComponent<Button>()->AddOnClickHandler(
+            [menuScene, this]() {
+                Game::state = GAME;
+                Player2Mode = false;
+                TestMode = false;
+            }
+        );
+        
+        GameObjectManager::GetInstance()->AddGameObject(playButtonSingle);
+
+        GameObject *playButtonMulti = new GameObject("PlayButtonMulti");
+        playButtonMulti->transform.position = Vector2(640, 550);
+        playButtonMulti->transform.scale = Vector2(5, 5);
+
+        playButtonMulti->AddComponent(new SpriteRenderer(playButtonMulti, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+
+        playButtonMulti->AddComponent(new BoxCollider2D(playButtonMulti, Vector2(0, 0), 
+            Vector2(32 * playButtonMulti->transform.scale.x, 16 * playButtonMulti->transform.scale.y)
+        ));
+
+        playButtonMulti->AddComponent(new Button(playButtonMulti));
+        playButtonMulti->GetComponent<Button>()->AddOnClickHandler(
+            [menuScene, this]() {
+                Game::state = GAME;
+                Player2Mode = true;
+                TestMode = false;
+            }
+        );
+        
+        GameObjectManager::GetInstance()->AddGameObject(playButtonMulti);
+
+        GameObject *testButton = new GameObject("TestButton");
+        testButton->transform.position = Vector2(1100, 700);
+        testButton->transform.scale = Vector2(2, 2);
+
+        testButton->AddComponent(new SpriteRenderer(testButton, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+
+        testButton->AddComponent(new BoxCollider2D(testButton, Vector2(0, 0), 
+            Vector2(32 * testButton->transform.scale.x, 16 * testButton->transform.scale.y)
+        ));
+
+        testButton->AddComponent(new Button(testButton));
+        testButton->GetComponent<Button>()->AddOnClickHandler(
+            [menuScene, this]() {
+                Game::state = GAME;
+                Player2Mode = true;
+                TestMode = true;
+            }
+        );
+        
+        GameObjectManager::GetInstance()->AddGameObject(testButton);
+
+    });
+
+    SceneManager::GetInstance()->AddScene(menuScene);
+
+    Scene *gameoverScene = new Scene("GameOver");
+
+    gameoverScene->AssignLogic([gameoverScene, this]() {
+        SoundManager::GetInstance()->StopMusic();
+        SoundManager::GetInstance()->PlaySound("Game_Over");
+
+    });
+
+    SceneManager::GetInstance()->AddScene(gameoverScene);
+
+    Scene *gameScene = new Scene("Game");
+    gameScene->AssignLogic([gameScene, this]() {
+        Game::state = GAME;
+        SoundManager::GetInstance()->PlayMusic("GameBgm");
 #pragma region Background Setup
         GameObject *background = new GameObject("Background");
         background->transform.position = Vector2(640, 360);
@@ -94,7 +208,7 @@ void Game::objectInit() {
 
         ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
 
-        ball->AddComponent(new BallStateMachine(ball, 2.0, 50, 100));
+        ball->AddComponent(new BallStateMachine(ball, 3.0, 300, 600));
 
         ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
             [ball](Collider2D *collider) {
@@ -116,14 +230,13 @@ void Game::objectInit() {
         player1->AddComponent(new RotateTowardVelocity(player1, Vector2(0, -1)));
         player1->AddComponent(new VelocityToAnimSpeedController(player1, "Run"));
 
-
         player1->transform.position = Vector2(100, HEIGHT / 2); // Centered vertically
         GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(175, HEIGHT / 2 + 60), 0, Vector2(2, 2));
         GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(175, HEIGHT / 2 - 60), 0, Vector2(2, 2));
 
         GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(WIDTH - 175, HEIGHT / 2 - 60), 0, Vector2(2, 2));
-        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(WIDTH - 175, HEIGHT / 2), 0, Vector2(2, 2));
-        GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(WIDTH - 100, HEIGHT / 2 + 60), 0, Vector2(2, 2));
+        GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(WIDTH - 100, HEIGHT / 2), 0, Vector2(2, 2));
+        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(WIDTH - 175, HEIGHT / 2 + 60), 0, Vector2(2, 2));
 
         player1->tag = player2->tag = player3->tag = 1;
         player4->tag = player5->tag = player6->tag = 2;
@@ -131,7 +244,9 @@ void Game::objectInit() {
         player1->AddComponent(new Animator(player1, {AnimationClip("Run", "Assets/Sprites/football.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
         player2->AddComponent(new Animator(player2, {AnimationClip("Run", "Assets/Sprites/football2.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
         player3->AddComponent(new Animator(player3, {AnimationClip("Run", "Assets/Sprites/football3.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
+        
         player4->AddComponent(new Animator(player4, {AnimationClip("Run", "Assets/Sprites/football4.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
+
         player5->AddComponent(new Animator(player5, {AnimationClip("Run", "Assets/Sprites/football5.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
         player6->AddComponent(new Animator(player6, {AnimationClip("Run", "Assets/Sprites/football6.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
 
@@ -140,6 +255,7 @@ void Game::objectInit() {
                 [player](Collider2D *collider) {
                     if (collider->gameObject->tag == 4) {
                         Rigidbody2D *rigidbody = player->GetComponent<Rigidbody2D>();
+                        SoundManager::GetInstance()->PlaySound("ball_bounce");
                         rigidbody->BounceOff(collider->GetNormal(player->transform.position));
                     }
                 });
@@ -189,23 +305,34 @@ void Game::objectInit() {
         movementControllerSwitcher1->AddMovementController(SDLK_3, player3->GetComponent<MovementController>());
         GameObjectManager::GetInstance()->AddGameObject(controllerSwitcher1);
 
-        if (Player2Mode) {
+        if (Player2Mode || TestMode) {
             // Second controller switcher for player4, player5, and player6
             GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
             TeamControl *movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
                 new TeamControl(controllerSwitcher2, LoadSpriteSheet("Assets/red_indicator.png"), 75.0)));
+            movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
             movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
             movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
-            movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
             GameObjectManager::GetInstance()->AddGameObject(controllerSwitcher2);
         }
 
         GameObjectManager::GetInstance()->AddGameObject(player1);
-        GameObjectManager::GetInstance()->AddGameObject(player2);
-        GameObjectManager::GetInstance()->AddGameObject(player3);
-        GameObjectManager::GetInstance()->AddGameObject(player4);
-        GameObjectManager::GetInstance()->AddGameObject(player5);
+        
         GameObjectManager::GetInstance()->AddGameObject(player6);
+
+        if (!TestMode){
+            GameObjectManager::GetInstance()->AddGameObject(player2);
+            GameObjectManager::GetInstance()->AddGameObject(player3);
+            GameObjectManager::GetInstance()->AddGameObject(player4);
+            GameObjectManager::GetInstance()->AddGameObject(player5);
+        }
+        else{
+            player2->GetComponent<Collider2D>()->enabled = false;
+            player3->GetComponent<Collider2D>()->enabled = false;
+            player4->GetComponent<Collider2D>()->enabled = false;
+            player5->GetComponent<Collider2D>()->enabled = false;
+        }
+
 
 #pragma endregion
 
@@ -226,8 +353,9 @@ void Game::objectInit() {
                 if (collider->gameObject->tag == 3) {
                     if (goal1Col->GetNormal(collider->gameObject->transform.position) == Vector2(1, 0)) {
                         std::cout << "Goal!!! Right team scored!" << std::endl;
+                        SoundManager::GetInstance()->PlaySound("Goal");
                         this->scoreTeam2++;
-                        SceneManager::GetInstance()->LoadScene("Main");
+                        SceneManager::GetInstance()->LoadScene("Game");
                     } else {
                         Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
                         rigidbody->BounceOff(goal1Col->GetNormal(collider->gameObject->transform.position));
@@ -257,8 +385,9 @@ void Game::objectInit() {
                 if (collider->gameObject->tag == 3) {
                     if (goal2Col->GetNormal(collider->gameObject->transform.position) == Vector2(-1, 0)) {
                         std::cout << "Goal!!! Left team scored!" << std::endl;
+                        SoundManager::GetInstance()->PlaySound("Goal");
                         this->scoreTeam1++;
-                        SceneManager::GetInstance()->LoadScene("Main");
+                        SceneManager::GetInstance()->LoadScene("Game");
                         return;
                     } else {
                         Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
@@ -274,8 +403,9 @@ void Game::objectInit() {
 
 #pragma endregion
     });
-    SceneManager::GetInstance()->AddScene(mainScene);
-    SceneManager::GetInstance()->LoadScene("Main");
+
+    SceneManager::GetInstance()->AddScene(gameScene);
+    SceneManager::GetInstance()->LoadScene("MainMenu");
 }
 
 void Game::handleEvents() {
@@ -287,16 +417,36 @@ void Game::handleEvents() {
         return;
     }
 
-    if (event.type == SDL_GOAL1_EVENT_TYPE) {
-        std::cout << "Goal!!! Right team scored!" << std::endl;
-        SceneManager::GetInstance()->LoadScene("Main");
+    if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+            state = MENU;
+            scoreTeam1 = scoreTeam2 = 0;
+            return;
+        }
+    }
+
+    //End condition
+    if (scoreTeam1 + scoreTeam2 >= 5) {
+        state = GAMEOVER;
         return;
     }
 
-    if (event.type == SDL_GOAL2_EVENT_TYPE) {
-        std::cout << "Goal!!! Left team scored!" << std::endl;
-        SceneManager::GetInstance()->LoadScene("Main");
-        return;
+}
+
+void Game::handleSceneChange() {
+    switch (state) {
+    case MENU:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "MainMenu")
+            SceneManager::GetInstance()->LoadScene("MainMenu");
+        break;
+    case GAME:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")
+            SceneManager::GetInstance()->LoadScene("Game");
+        break;
+    case GAMEOVER:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver")
+            SceneManager::GetInstance()->LoadScene("GameOver");
+        break;
     }
 }
 
@@ -309,16 +459,40 @@ void Game::render() {
     SceneManager::GetInstance()->Draw();
 
     // Show score
-    SDL_Color textColor = {0, 0, 0, 255};
-    std::string scoreText = std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
-    SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
-    if (scoreTexture) {
-        RenderTexture(scoreTexture, 640, 20);
-        SDL_DestroyTexture(scoreTexture);
-    } else {
-        std::cerr << "Failed to load score texture" << std::endl;
+    if (state == GAME){
+        SDL_Color textColor = {0, 0, 0, 255};
+        std::string scoreText = std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
+        SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
+        if (scoreTexture) {
+            RenderTexture(scoreTexture, 640, 20);
+            SDL_DestroyTexture(scoreTexture);
+        } else {
+            std::cerr << "Failed to load score texture" << std::endl;
+        }
     }
 
+    if (state == GAMEOVER){
+        // Render "Game Over!" text
+        SDL_Color textColor = {255, 0, 0, 255}; // Red color for "Game Over!"
+        SDL_Texture* gameOverTexture = LoadFontTexture("Game Over!", "Assets/Fonts/arial.ttf", textColor, 100);
+        if (gameOverTexture) {
+            RenderTexture(gameOverTexture, 640, 200); // Centered at the top
+            SDL_DestroyTexture(gameOverTexture);
+        } else {
+            std::cerr << "Failed to load 'Game Over!' texture" << std::endl;
+        }
+
+        // Render final scores
+        textColor = {0, 0, 0, 255}; // Black color for scores
+        std::string scoreText = "Final Score: " + std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
+        SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
+        if (scoreTexture) {
+            RenderTexture(scoreTexture, 640, 400); // Centered below "Game Over!"
+            SDL_DestroyTexture(scoreTexture);
+        } else {
+            std::cerr << "Failed to load score texture" << std::endl;
+        }
+    }
 
     SDL_RenderPresent(renderer);
 }
@@ -333,7 +507,7 @@ void Game::clean() {
 
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
-    // Quit SDL_ttf
+    
     TTF_Quit();
     SDL_Quit();
     std::cout << "Game cleaned..." << std::endl;
