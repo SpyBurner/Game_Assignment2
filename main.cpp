@@ -1,8 +1,9 @@
 #include "Game.hpp"
 #include "Global.hpp"
 #include <SDL2/SDL.h>
-#include <iostream>
 
+#include <iostream>
+#include <cstring>
 
 Game *game = nullptr;
 

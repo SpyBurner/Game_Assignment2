@@ -28,7 +28,7 @@ const float GoalKeeperSpeed = 12.0f;
 const float DefenderSpeed = 10.0f;
 const float AttackerSpeed = 10.0f;
 
-const bool Player2Mode = false;
+static bool Player2Mode = false;
 
 #define EPS 0.0001
 

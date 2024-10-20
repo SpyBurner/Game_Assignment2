@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <SDL2/SDL_mixer.h>
 
 SDL_Event Game::event;
 
@@ -49,6 +50,14 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
             return;
         }
 
+        // if (Mix_Init(0) == 0){
+        //     std::cerr << "Failed to initialize Mixer: " << Mix_GetError() << std::endl;
+        //     isRunning = false;
+        //     return;
+        // }
+
+        // Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+
         isRunning = true;
     } else {
         isRunning = false;
@@ -78,24 +87,45 @@ void Game::objectInit() {
         
         GameObjectManager::GetInstance()->AddGameObject(title);
 
-        GameObject *playButton = new GameObject("PlayButton");
-        playButton->transform.position = Vector2(640, 400);
-        playButton->transform.scale = Vector2(5, 5);
+        GameObject *playButtonSingle = new GameObject("PlayButton");
+        playButtonSingle->transform.position = Vector2(640, 400);
+        playButtonSingle->transform.scale = Vector2(5, 5);
 
-        playButton->AddComponent(new SpriteRenderer(playButton, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+        playButtonSingle->AddComponent(new SpriteRenderer(playButtonSingle, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
 
-        playButton->AddComponent(new BoxCollider2D(playButton, Vector2(0, 0), 
-            Vector2(32 * playButton->transform.scale.x, 16 * playButton->transform.scale.y)
+        playButtonSingle->AddComponent(new BoxCollider2D(playButtonSingle, Vector2(0, 0), 
+            Vector2(32 * playButtonSingle->transform.scale.x, 16 * playButtonSingle->transform.scale.y)
         ));
 
-        playButton->AddComponent(new Button(playButton));
-        playButton->GetComponent<Button>()->AddOnClickHandler(
+        playButtonSingle->AddComponent(new Button(playButtonSingle));
+        playButtonSingle->GetComponent<Button>()->AddOnClickHandler(
             [menuScene, this]() {
                 Game::state = GAME;
+                Player2Mode = false;
             }
         );
         
-        GameObjectManager::GetInstance()->AddGameObject(playButton);
+        GameObjectManager::GetInstance()->AddGameObject(playButtonSingle);
+
+        GameObject *playButtonMulti = new GameObject("PlayButtonMulti");
+        playButtonMulti->transform.position = Vector2(640, 550);
+        playButtonMulti->transform.scale = Vector2(5, 5);
+
+        playButtonMulti->AddComponent(new SpriteRenderer(playButtonMulti, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+
+        playButtonMulti->AddComponent(new BoxCollider2D(playButtonMulti, Vector2(0, 0), 
+            Vector2(32 * playButtonMulti->transform.scale.x, 16 * playButtonMulti->transform.scale.y)
+        ));
+
+        playButtonMulti->AddComponent(new Button(playButtonMulti));
+        playButtonMulti->GetComponent<Button>()->AddOnClickHandler(
+            [menuScene, this]() {
+                Game::state = GAME;
+                Player2Mode = true;
+            }
+        );
+        
+        GameObjectManager::GetInstance()->AddGameObject(playButtonMulti);
 
     });
 
@@ -138,7 +168,7 @@ void Game::objectInit() {
 
         ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
 
-        ball->AddComponent(new BallStateMachine(ball, 2.0, 50, 100));
+        ball->AddComponent(new BallStateMachine(ball, 2.0, 200, 100));
 
         ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
             [ball](Collider2D *collider) {
@@ -166,8 +196,8 @@ void Game::objectInit() {
         GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(175, HEIGHT / 2 - 60), 0, Vector2(2, 2));
 
         GameObject *player4 = GameObject::Instantiate("Player4", player1, Vector2(WIDTH - 175, HEIGHT / 2 - 60), 0, Vector2(2, 2));
-        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(WIDTH - 175, HEIGHT / 2), 0, Vector2(2, 2));
-        GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(WIDTH - 100, HEIGHT / 2 + 60), 0, Vector2(2, 2));
+        GameObject *player6 = GameObject::Instantiate("Player6", player1, Vector2(WIDTH - 100, HEIGHT / 2), 0, Vector2(2, 2));
+        GameObject *player5 = GameObject::Instantiate("Player5", player1, Vector2(WIDTH - 175, HEIGHT / 2 + 60), 0, Vector2(2, 2));
 
         player1->tag = player2->tag = player3->tag = 1;
         player4->tag = player5->tag = player6->tag = 2;
@@ -238,9 +268,9 @@ void Game::objectInit() {
             GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
             TeamControl *movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
                 new TeamControl(controllerSwitcher2, LoadSpriteSheet("Assets/red_indicator.png"), 75.0)));
+            movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
             movementControllerSwitcher2->AddMovementController(SDLK_KP_4, player4->GetComponent<MovementController>());
             movementControllerSwitcher2->AddMovementController(SDLK_KP_5, player5->GetComponent<MovementController>());
-            movementControllerSwitcher2->AddMovementController(SDLK_KP_6, player6->GetComponent<MovementController>());
             GameObjectManager::GetInstance()->AddGameObject(controllerSwitcher2);
         }
 
