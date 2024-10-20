@@ -603,4 +603,46 @@ public:
     }
 };
 
+class Button : public Component {
+private:
+    Collider2D *collider = nullptr;
+
+    Event<> *onClick = nullptr;
+public:
+
+    Button(GameObject *parent) : Component(parent) {
+        onClick = new Event<>();
+    }
+
+    ~Button() {
+        delete onClick;
+    }
+
+    void Update() {
+        if (collider == nullptr){
+            collider = gameObject->GetComponent<Collider2D>();
+            if (collider == nullptr) return;
+        }
+
+        if (Game::event.type == SDL_MOUSEBUTTONDOWN) {
+            Vector2 mousePosition = Vector2(Game::event.button.x, Game::event.button.y);
+            if (collider->CheckCollision(mousePosition)) {
+                this->onClick->raise();
+            }
+        }
+    }
+
+    void Draw() {}
+    
+    void AddOnClickHandler(std::function<void()> handler) {
+        onClick->addHandler(handler);
+    }
+
+    Component *Clone(GameObject *parent) {
+        Button *newButton = new Button(parent);
+        newButton->onClick = onClick;
+        return newButton;
+    }
+};
+
 #endif

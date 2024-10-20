@@ -21,6 +21,7 @@ Game::~Game() {
 void Game::init(const char *title, int xpos, int ypos, int width, int height, bool fullscreen) {
     reset = false;
     int flags = 0;
+    
     if (fullscreen) {
         flags = SDL_WINDOW_FULLSCREEN;
     }
@@ -35,7 +36,7 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
 
         renderer = SDL_CreateRenderer(window, -1, 0);
         if (renderer) {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_SetRenderDrawColor(renderer, 128, 239, 129, 255);
             std::cout << "Renderer created..." << std::endl;
         }
 
@@ -53,6 +54,7 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
         isRunning = false;
     }
 
+    state = MENU;
     objectInit();
 }
 
@@ -63,9 +65,51 @@ void Game::objectInit() {
 
     std::cout << "Object Initialisation..." << std::endl;
 
-    Scene *mainScene = new Scene("Main");
-    mainScene->AssignLogic([mainScene, this]() {
+    Scene *menuScene = new Scene("MainMenu");
+    menuScene->AssignLogic([menuScene, this]() {
+        Game::state = MENU;
+        GameObject *title = new GameObject("Title");
+        title->transform.position = Vector2(640, 200);
+        title->transform.scale = Vector2(10, 10);
+        
+        title->AddComponent(new SpriteRenderer(title, Vector2(64, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Game_Name.png")));
+        title->AddComponent(new Animator(title, {AnimationClip("Idle", "Assets/Sprites/UI/Game_Name.png", Vector2(64, 16), 200, true, 1.0, 0, 1)}));
+        title->GetComponent<Animator>()->Play("Idle");
+        
+        GameObjectManager::GetInstance()->AddGameObject(title);
 
+        GameObject *playButton = new GameObject("PlayButton");
+        playButton->transform.position = Vector2(640, 400);
+        playButton->transform.scale = Vector2(5, 5);
+
+        playButton->AddComponent(new SpriteRenderer(playButton, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+
+        playButton->AddComponent(new BoxCollider2D(playButton, Vector2(0, 0), 
+            Vector2(32 * playButton->transform.scale.x, 16 * playButton->transform.scale.y)
+        ));
+
+        playButton->AddComponent(new Button(playButton));
+        playButton->GetComponent<Button>()->AddOnClickHandler(
+            [menuScene, this]() {
+                Game::state = GAME;
+            }
+        );
+        
+        GameObjectManager::GetInstance()->AddGameObject(playButton);
+
+    });
+
+    SceneManager::GetInstance()->AddScene(menuScene);
+
+    Scene *gameoverScene = new Scene("GameOver");
+
+    gameoverScene->AssignLogic([gameoverScene, this]() {});
+
+    SceneManager::GetInstance()->AddScene(gameoverScene);
+
+    Scene *gameScene = new Scene("Game");
+    gameScene->AssignLogic([gameScene, this]() {
+        Game::state = GAME;
 #pragma region Background Setup
         GameObject *background = new GameObject("Background");
         background->transform.position = Vector2(640, 360);
@@ -227,7 +271,7 @@ void Game::objectInit() {
                     if (goal1Col->GetNormal(collider->gameObject->transform.position) == Vector2(1, 0)) {
                         std::cout << "Goal!!! Right team scored!" << std::endl;
                         this->scoreTeam2++;
-                        SceneManager::GetInstance()->LoadScene("Main");
+                        SceneManager::GetInstance()->LoadScene("Game");
                     } else {
                         Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
                         rigidbody->BounceOff(goal1Col->GetNormal(collider->gameObject->transform.position));
@@ -258,7 +302,7 @@ void Game::objectInit() {
                     if (goal2Col->GetNormal(collider->gameObject->transform.position) == Vector2(-1, 0)) {
                         std::cout << "Goal!!! Left team scored!" << std::endl;
                         this->scoreTeam1++;
-                        SceneManager::GetInstance()->LoadScene("Main");
+                        SceneManager::GetInstance()->LoadScene("Game");
                         return;
                     } else {
                         Rigidbody2D *rigidbody = collider->gameObject->GetComponent<Rigidbody2D>();
@@ -274,8 +318,9 @@ void Game::objectInit() {
 
 #pragma endregion
     });
-    SceneManager::GetInstance()->AddScene(mainScene);
-    SceneManager::GetInstance()->LoadScene("Main");
+
+    SceneManager::GetInstance()->AddScene(gameScene);
+    SceneManager::GetInstance()->LoadScene("MainMenu");
 }
 
 void Game::handleEvents() {
@@ -287,16 +332,36 @@ void Game::handleEvents() {
         return;
     }
 
-    if (event.type == SDL_GOAL1_EVENT_TYPE) {
-        std::cout << "Goal!!! Right team scored!" << std::endl;
-        SceneManager::GetInstance()->LoadScene("Main");
+    if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+            state = MENU;
+            scoreTeam1 = scoreTeam2 = 0;
+            return;
+        }
+    }
+
+    //End condition
+    if (scoreTeam1 + scoreTeam2 >= 5) {
+        state = GAMEOVER;
         return;
     }
 
-    if (event.type == SDL_GOAL2_EVENT_TYPE) {
-        std::cout << "Goal!!! Left team scored!" << std::endl;
-        SceneManager::GetInstance()->LoadScene("Main");
-        return;
+}
+
+void Game::handleSceneChange() {
+    switch (state) {
+    case MENU:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "MainMenu")
+            SceneManager::GetInstance()->LoadScene("MainMenu");
+        break;
+    case GAME:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")
+            SceneManager::GetInstance()->LoadScene("Game");
+        break;
+    case GAMEOVER:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver")
+            SceneManager::GetInstance()->LoadScene("GameOver");
+        break;
     }
 }
 
@@ -309,16 +374,40 @@ void Game::render() {
     SceneManager::GetInstance()->Draw();
 
     // Show score
-    SDL_Color textColor = {0, 0, 0, 255};
-    std::string scoreText = std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
-    SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
-    if (scoreTexture) {
-        RenderTexture(scoreTexture, 640, 20);
-        SDL_DestroyTexture(scoreTexture);
-    } else {
-        std::cerr << "Failed to load score texture" << std::endl;
+    if (state == GAME){
+        SDL_Color textColor = {0, 0, 0, 255};
+        std::string scoreText = std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
+        SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
+        if (scoreTexture) {
+            RenderTexture(scoreTexture, 640, 20);
+            SDL_DestroyTexture(scoreTexture);
+        } else {
+            std::cerr << "Failed to load score texture" << std::endl;
+        }
     }
 
+    if (state == GAMEOVER){
+        // Render "Game Over!" text
+        SDL_Color textColor = {255, 0, 0, 255}; // Red color for "Game Over!"
+        SDL_Texture* gameOverTexture = LoadFontTexture("Game Over!", "Assets/Fonts/arial.ttf", textColor, 100);
+        if (gameOverTexture) {
+            RenderTexture(gameOverTexture, 640, 200); // Centered at the top
+            SDL_DestroyTexture(gameOverTexture);
+        } else {
+            std::cerr << "Failed to load 'Game Over!' texture" << std::endl;
+        }
+
+        // Render final scores
+        textColor = {0, 0, 0, 255}; // Black color for scores
+        std::string scoreText = "Final Score: " + std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
+        SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
+        if (scoreTexture) {
+            RenderTexture(scoreTexture, 640, 400); // Centered below "Game Over!"
+            SDL_DestroyTexture(scoreTexture);
+        } else {
+            std::cerr << "Failed to load score texture" << std::endl;
+        }
+    }
 
     SDL_RenderPresent(renderer);
 }

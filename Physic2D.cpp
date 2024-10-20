@@ -165,6 +165,12 @@ bool CircleCollider2D::CheckCollision(BoxCollider2D *other) {
     return ::CheckCollision(this, other);
 }
 
+bool CircleCollider2D::CheckCollision(Vector2 point) {
+    Vector2 thisPosition = this->gameObject->transform.position + this->offset;
+    float distance = (thisPosition - point).Magnitude();
+    return distance < this->radius;
+}
+
 Vector2 CircleCollider2D::GetNormal(Vector2 point) {
     return (point - this->gameObject->transform.position).Normalize();
 }
@@ -208,6 +214,13 @@ bool BoxCollider2D::CheckCollision(BoxCollider2D *other) {
     bool collisionY = box1Max.y >= box2Min.y && box1Min.y <= box2Max.y;
 
     return collisionX && collisionY;
+}
+
+bool BoxCollider2D::CheckCollision(Vector2 point) {
+    Vector2 boxMin = this->gameObject->transform.position - this->size / 2 + this->offset;
+    Vector2 boxMax = this->gameObject->transform.position + this->size / 2 + this->offset;
+
+    return point.x >= boxMin.x && point.x <= boxMax.x && point.y >= boxMin.y && point.y <= boxMax.y;
 }
 
 Vector2 BoxCollider2D::GetNormal(Vector2 point) {
@@ -261,6 +274,5 @@ bool CheckCollision(CircleCollider2D *circle, BoxCollider2D *box) {
     float distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
     return distanceSquared < (circle->radius * circle->radius);
 }
-
 
 #pragma endregion

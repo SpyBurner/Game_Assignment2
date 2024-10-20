@@ -8,9 +8,18 @@ public:
     Game();
     ~Game();
 
+    enum State{
+        MENU,
+        GAME,
+        GAMEOVER
+    };
+
+    State state = MENU;
+
     void init(const char* title, int xpos, int ypos, int width, int height, bool fullscreen);
     void objectInit();
     void handleEvents();
+    void handleSceneChange();
     void update();
     void render();
     void clean();

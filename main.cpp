@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
         game->update();
         game->render();
         
+        game->handleSceneChange();
         SDL_Delay(1000 / FPS);
     }
 
