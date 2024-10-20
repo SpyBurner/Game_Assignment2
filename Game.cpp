@@ -50,13 +50,11 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
             return;
         }
 
-        // if (Mix_Init(0) == 0){
-        //     std::cerr << "Failed to initialize Mixer: " << Mix_GetError() << std::endl;
-        //     isRunning = false;
-        //     return;
-        // }
-
-        // Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+        if (Mix_Init(MIX_INIT_MP3) == 0){
+            std::cerr << "Failed to initialize Mixer: " << Mix_GetError() << std::endl;
+            isRunning = false;
+            return;
+        }
 
         isRunning = true;
     } else {
@@ -72,11 +70,26 @@ GameObject *player = new GameObject("Player");
 void Game::objectInit() {
     // Add your object initialisation here
 
+    //Add sounds and music
+    SoundManager::GetInstance();
+    SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/fairyfountain.mp3", 100);
+    SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/papyrus.mp3", 64);
+
+    SoundManager::GetInstance()->AddSound("ball_bounce", "Assets/SFX/ball_bounce.mp3", 100);
+    SoundManager::GetInstance()->AddSound("ball_kick", "Assets/SFX/ball_kick.mp3", 128);
+
+    SoundManager::GetInstance()->AddSound("Game_Over", "Assets/SFX/gameover.mp3", 128);
+    SoundManager::GetInstance()->AddSound("Goal", "Assets/SFX/score.mp3", 64);
+
+    SoundManager::GetInstance()->AddSound("Cheer", "Assets/SFX/crowd_cheer.mp3", 64);
+
     std::cout << "Object Initialisation..." << std::endl;
 
     Scene *menuScene = new Scene("MainMenu");
     menuScene->AssignLogic([menuScene, this]() {
         Game::state = MENU;
+        SoundManager::GetInstance()->PlayMusic("MenuBgm");
+
         GameObject *title = new GameObject("Title");
         title->transform.position = Vector2(640, 200);
         title->transform.scale = Vector2(10, 10);
@@ -133,13 +146,18 @@ void Game::objectInit() {
 
     Scene *gameoverScene = new Scene("GameOver");
 
-    gameoverScene->AssignLogic([gameoverScene, this]() {});
+    gameoverScene->AssignLogic([gameoverScene, this]() {
+        SoundManager::GetInstance()->StopMusic();
+        SoundManager::GetInstance()->PlaySound("Game_Over");
+
+    });
 
     SceneManager::GetInstance()->AddScene(gameoverScene);
 
     Scene *gameScene = new Scene("Game");
     gameScene->AssignLogic([gameScene, this]() {
         Game::state = GAME;
+        SoundManager::GetInstance()->PlayMusic("GameBgm");
 #pragma region Background Setup
         GameObject *background = new GameObject("Background");
         background->transform.position = Vector2(640, 360);
@@ -214,6 +232,7 @@ void Game::objectInit() {
                 [player](Collider2D *collider) {
                     if (collider->gameObject->tag == 4) {
                         Rigidbody2D *rigidbody = player->GetComponent<Rigidbody2D>();
+                        SoundManager::GetInstance()->PlaySound("ball_bounce");
                         rigidbody->BounceOff(collider->GetNormal(player->transform.position));
                     }
                 });
@@ -300,6 +319,7 @@ void Game::objectInit() {
                 if (collider->gameObject->tag == 3) {
                     if (goal1Col->GetNormal(collider->gameObject->transform.position) == Vector2(1, 0)) {
                         std::cout << "Goal!!! Right team scored!" << std::endl;
+                        SoundManager::GetInstance()->PlaySound("Goal");
                         this->scoreTeam2++;
                         SceneManager::GetInstance()->LoadScene("Game");
                     } else {
@@ -331,6 +351,7 @@ void Game::objectInit() {
                 if (collider->gameObject->tag == 3) {
                     if (goal2Col->GetNormal(collider->gameObject->transform.position) == Vector2(-1, 0)) {
                         std::cout << "Goal!!! Left team scored!" << std::endl;
+                        SoundManager::GetInstance()->PlaySound("Goal");
                         this->scoreTeam1++;
                         SceneManager::GetInstance()->LoadScene("Game");
                         return;
@@ -351,6 +372,8 @@ void Game::objectInit() {
 
     SceneManager::GetInstance()->AddScene(gameScene);
     SceneManager::GetInstance()->LoadScene("MainMenu");
+
+
 }
 
 void Game::handleEvents() {
@@ -452,7 +475,7 @@ void Game::clean() {
 
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
-    // Quit SDL_ttf
+    
     TTF_Quit();
     SDL_Quit();
     std::cout << "Game cleaned..." << std::endl;

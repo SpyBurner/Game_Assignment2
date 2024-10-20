@@ -46,7 +46,7 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
     if (Vector2::Dot(this->velocity, normal) > 0) {
         return;
     }
-
+    
     this->acceleration = Vector2(0, 0);
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
 }
