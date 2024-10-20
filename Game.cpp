@@ -68,8 +68,7 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
 GameObject *player = new GameObject("Player");
 
 void Game::objectInit() {
-    // Add your object initialisation here
-
+    
     //Add sounds and music
     SoundManager::GetInstance();
     SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/fairyfountain.mp3", 100);
@@ -115,6 +114,7 @@ void Game::objectInit() {
             [menuScene, this]() {
                 Game::state = GAME;
                 Player2Mode = false;
+                TestMode = false;
             }
         );
         
@@ -135,10 +135,32 @@ void Game::objectInit() {
             [menuScene, this]() {
                 Game::state = GAME;
                 Player2Mode = true;
+                TestMode = false;
             }
         );
         
         GameObjectManager::GetInstance()->AddGameObject(playButtonMulti);
+
+        GameObject *testButton = new GameObject("TestButton");
+        testButton->transform.position = Vector2(1100, 700);
+        testButton->transform.scale = Vector2(2, 2);
+
+        testButton->AddComponent(new SpriteRenderer(testButton, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+
+        testButton->AddComponent(new BoxCollider2D(testButton, Vector2(0, 0), 
+            Vector2(32 * testButton->transform.scale.x, 16 * testButton->transform.scale.y)
+        ));
+
+        testButton->AddComponent(new Button(testButton));
+        testButton->GetComponent<Button>()->AddOnClickHandler(
+            [menuScene, this]() {
+                Game::state = GAME;
+                Player2Mode = true;
+                TestMode = true;
+            }
+        );
+        
+        GameObjectManager::GetInstance()->AddGameObject(testButton);
 
     });
 
@@ -186,7 +208,7 @@ void Game::objectInit() {
 
         ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
 
-        ball->AddComponent(new BallStateMachine(ball, 2.0, 200, 100));
+        ball->AddComponent(new BallStateMachine(ball, 3.0, 300, 600));
 
         ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
             [ball](Collider2D *collider) {
@@ -208,7 +230,6 @@ void Game::objectInit() {
         player1->AddComponent(new RotateTowardVelocity(player1, Vector2(0, -1)));
         player1->AddComponent(new VelocityToAnimSpeedController(player1, "Run"));
 
-
         player1->transform.position = Vector2(100, HEIGHT / 2); // Centered vertically
         GameObject *player2 = GameObject::Instantiate("Player2", player1, Vector2(175, HEIGHT / 2 + 60), 0, Vector2(2, 2));
         GameObject *player3 = GameObject::Instantiate("Player3", player1, Vector2(175, HEIGHT / 2 - 60), 0, Vector2(2, 2));
@@ -223,7 +244,9 @@ void Game::objectInit() {
         player1->AddComponent(new Animator(player1, {AnimationClip("Run", "Assets/Sprites/football.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
         player2->AddComponent(new Animator(player2, {AnimationClip("Run", "Assets/Sprites/football2.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
         player3->AddComponent(new Animator(player3, {AnimationClip("Run", "Assets/Sprites/football3.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
+        
         player4->AddComponent(new Animator(player4, {AnimationClip("Run", "Assets/Sprites/football4.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
+
         player5->AddComponent(new Animator(player5, {AnimationClip("Run", "Assets/Sprites/football5.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
         player6->AddComponent(new Animator(player6, {AnimationClip("Run", "Assets/Sprites/football6.png", Vector2(32, 32), 1000, true, 1.0, 0, 5)}));
 
@@ -282,7 +305,7 @@ void Game::objectInit() {
         movementControllerSwitcher1->AddMovementController(SDLK_3, player3->GetComponent<MovementController>());
         GameObjectManager::GetInstance()->AddGameObject(controllerSwitcher1);
 
-        if (Player2Mode) {
+        if (Player2Mode || TestMode) {
             // Second controller switcher for player4, player5, and player6
             GameObject *controllerSwitcher2 = new GameObject("ControllerSwitcher2");
             TeamControl *movementControllerSwitcher2 = dynamic_cast<TeamControl *>(controllerSwitcher2->AddComponent(
@@ -294,11 +317,22 @@ void Game::objectInit() {
         }
 
         GameObjectManager::GetInstance()->AddGameObject(player1);
-        GameObjectManager::GetInstance()->AddGameObject(player2);
-        GameObjectManager::GetInstance()->AddGameObject(player3);
-        GameObjectManager::GetInstance()->AddGameObject(player4);
-        GameObjectManager::GetInstance()->AddGameObject(player5);
+        
         GameObjectManager::GetInstance()->AddGameObject(player6);
+
+        if (!TestMode){
+            GameObjectManager::GetInstance()->AddGameObject(player2);
+            GameObjectManager::GetInstance()->AddGameObject(player3);
+            GameObjectManager::GetInstance()->AddGameObject(player4);
+            GameObjectManager::GetInstance()->AddGameObject(player5);
+        }
+        else{
+            player2->GetComponent<Collider2D>()->enabled = false;
+            player3->GetComponent<Collider2D>()->enabled = false;
+            player4->GetComponent<Collider2D>()->enabled = false;
+            player5->GetComponent<Collider2D>()->enabled = false;
+        }
+
 
 #pragma endregion
 
@@ -372,8 +406,6 @@ void Game::objectInit() {
 
     SceneManager::GetInstance()->AddScene(gameScene);
     SceneManager::GetInstance()->LoadScene("MainMenu");
-
-
 }
 
 void Game::handleEvents() {

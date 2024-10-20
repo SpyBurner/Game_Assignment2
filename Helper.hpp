@@ -149,7 +149,7 @@ public:
                     this->gameObject->transform.position.y = 0;
             }
         }
-        if (this->gameObject->transform.position.y > HEIGHT - 44) {
+        if (this->gameObject->transform.position.y > HEIGHT) {
             if (teleport){
                 this->gameObject->transform.position.y = 0;
             }
@@ -159,7 +159,7 @@ public:
                     bounced = true;
                 }
                 else
-                    this->gameObject->transform.position.y = HEIGHT - 44;
+                    this->gameObject->transform.position.y = HEIGHT;
             }
         }
         if (bounced){

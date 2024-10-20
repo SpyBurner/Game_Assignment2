@@ -48,6 +48,9 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
     }
     
     this->acceleration = Vector2(0, 0);
+    if (velocity.Magnitude() < 0.01f) {
+        velocity = velocity.Normalize();
+    }
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
 }
 
