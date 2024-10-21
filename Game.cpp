@@ -72,15 +72,13 @@ void Game::objectInit() {
     //Add sounds and music
     SoundManager::GetInstance();
     SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/fairyfountain.mp3", 100);
-    SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/papyrus.mp3", 64);
+    SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/papyrus.mp3", 32);
 
-    SoundManager::GetInstance()->AddSound("ball_bounce", "Assets/SFX/ball_bounce.mp3", 100);
+    SoundManager::GetInstance()->AddSound("ball_bounce", "Assets/SFX/ball_bounce.mp3", 128);
     SoundManager::GetInstance()->AddSound("ball_kick", "Assets/SFX/ball_kick.mp3", 128);
 
     SoundManager::GetInstance()->AddSound("Game_Over", "Assets/SFX/gameover.mp3", 128);
     SoundManager::GetInstance()->AddSound("Goal", "Assets/SFX/score.mp3", 64);
-
-    SoundManager::GetInstance()->AddSound("Cheer", "Assets/SFX/crowd_cheer.mp3", 64);
 
     std::cout << "Object Initialisation..." << std::endl;
 
@@ -88,6 +86,14 @@ void Game::objectInit() {
     menuScene->AssignLogic([menuScene, this]() {
         Game::state = MENU;
         SoundManager::GetInstance()->PlayMusic("MenuBgm");
+
+        GameObject *background = new GameObject("Background");
+        background->transform.position = Vector2(640, 360);
+        background->transform.scale = Vector2(1, 1);
+
+        background->AddComponent(new SpriteRenderer(background, Vector2(2560, 1707), -10, LoadSpriteSheet("Assets/Sprites/UI/MenuBG.jpg")));
+
+        GameObjectManager::GetInstance()->AddGameObject(background);
 
         GameObject *title = new GameObject("Title");
         title->transform.position = Vector2(640, 200);
@@ -103,10 +109,10 @@ void Game::objectInit() {
         playButtonSingle->transform.position = Vector2(640, 400);
         playButtonSingle->transform.scale = Vector2(5, 5);
 
-        playButtonSingle->AddComponent(new SpriteRenderer(playButtonSingle, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+        playButtonSingle->AddComponent(new SpriteRenderer(playButtonSingle, Vector2(48, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button1p.png")));
 
         playButtonSingle->AddComponent(new BoxCollider2D(playButtonSingle, Vector2(0, 0), 
-            Vector2(32 * playButtonSingle->transform.scale.x, 16 * playButtonSingle->transform.scale.y)
+            Vector2(48 * playButtonSingle->transform.scale.x, 16 * playButtonSingle->transform.scale.y)
         ));
 
         playButtonSingle->AddComponent(new Button(playButtonSingle));
@@ -124,10 +130,10 @@ void Game::objectInit() {
         playButtonMulti->transform.position = Vector2(640, 550);
         playButtonMulti->transform.scale = Vector2(5, 5);
 
-        playButtonMulti->AddComponent(new SpriteRenderer(playButtonMulti, Vector2(32, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_button.png")));
+        playButtonMulti->AddComponent(new SpriteRenderer(playButtonMulti, Vector2(48, 16), 0, LoadSpriteSheet("Assets/Sprites/UI/Play_Button2p.png")));
 
         playButtonMulti->AddComponent(new BoxCollider2D(playButtonMulti, Vector2(0, 0), 
-            Vector2(32 * playButtonMulti->transform.scale.x, 16 * playButtonMulti->transform.scale.y)
+            Vector2(48 * playButtonMulti->transform.scale.x, 16 * playButtonMulti->transform.scale.y)
         ));
 
         playButtonMulti->AddComponent(new Button(playButtonMulti));
@@ -162,6 +168,27 @@ void Game::objectInit() {
         
         GameObjectManager::GetInstance()->AddGameObject(testButton);
 
+        GameObject *quitButton = new GameObject("QuitButton");
+        quitButton->transform.scale = Vector2(2, 2);
+
+        quitButton->transform.position = Vector2(1280 - 32 * 2 / 2, 32 * 2 / 2);
+
+        quitButton->AddComponent(new SpriteRenderer(quitButton, Vector2(32, 32), 0, LoadSpriteSheet("Assets/Sprites/UI/Quit_button.png")));
+
+        quitButton->AddComponent(new BoxCollider2D(quitButton, Vector2(0, 0), 
+            Vector2(32 * quitButton->transform.scale.x, 32 * quitButton->transform.scale.y)
+        ));
+
+        quitButton->AddComponent(new Button(quitButton));
+        quitButton->GetComponent<Button>()->AddOnClickHandler(
+            [menuScene, this]() {
+                SDL_Event *SDL_Quit = new SDL_Event();
+                SDL_Quit->type = SDL_QUIT;
+                SDL_PushEvent(SDL_Quit);
+            }
+        );
+
+        GameObjectManager::GetInstance()->AddGameObject(quitButton);
     });
 
     SceneManager::GetInstance()->AddScene(menuScene);
@@ -172,6 +199,34 @@ void Game::objectInit() {
         SoundManager::GetInstance()->StopMusic();
         SoundManager::GetInstance()->PlaySound("Game_Over");
 
+        GameObject* gameoverText = new GameObject("GameOverText");
+        gameoverText->transform.position = Vector2(640, 200);
+        gameoverText->transform.scale = Vector2(5, 5);
+
+        gameoverText->AddComponent(new SpriteRenderer(gameoverText, Vector2(128, 64), 1, LoadSpriteSheet("Assets/Sprites/UI/GameOver.png")));
+
+        GameObjectManager::GetInstance()->AddGameObject(gameoverText);
+
+        GameObject *quitButton = new GameObject("QuitButton");
+        quitButton->transform.scale = Vector2(2, 2);
+
+        quitButton->transform.position = Vector2(1280 - 32 * 2 / 2, 32 * 2 / 2);
+
+        quitButton->AddComponent(new SpriteRenderer(quitButton, Vector2(32, 32), 0, LoadSpriteSheet("Assets/Sprites/UI/Quit_button.png")));
+
+        quitButton->AddComponent(new BoxCollider2D(quitButton, Vector2(0, 0), 
+            Vector2(32 * quitButton->transform.scale.x, 32 * quitButton->transform.scale.y)
+        ));
+
+        quitButton->AddComponent(new Button(quitButton));
+        quitButton->GetComponent<Button>()->AddOnClickHandler(
+            [gameoverScene, this]() {
+                Game::state = MENU;
+                scoreTeam1 = scoreTeam2 = 0;
+            }
+        );
+
+        GameObjectManager::GetInstance()->AddGameObject(quitButton);
     });
 
     SceneManager::GetInstance()->AddScene(gameoverScene);
@@ -180,6 +235,7 @@ void Game::objectInit() {
     gameScene->AssignLogic([gameScene, this]() {
         Game::state = GAME;
         SoundManager::GetInstance()->PlayMusic("GameBgm");
+
 #pragma region Background Setup
         GameObject *background = new GameObject("Background");
         background->transform.position = Vector2(640, 360);
@@ -208,7 +264,7 @@ void Game::objectInit() {
 
         ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
 
-        ball->AddComponent(new BallStateMachine(ball, 3.0, 300, 600));
+        ball->AddComponent(new BallStateMachine(ball, 2.0, 700, 1000));
 
         ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler(
             [ball](Collider2D *collider) {
@@ -472,20 +528,10 @@ void Game::render() {
     }
 
     if (state == GAMEOVER){
-        // Render "Game Over!" text
-        SDL_Color textColor = {255, 0, 0, 255}; // Red color for "Game Over!"
-        SDL_Texture* gameOverTexture = LoadFontTexture("Game Over!", "Assets/Fonts/arial.ttf", textColor, 100);
-        if (gameOverTexture) {
-            RenderTexture(gameOverTexture, 640, 200); // Centered at the top
-            SDL_DestroyTexture(gameOverTexture);
-        } else {
-            std::cerr << "Failed to load 'Game Over!' texture" << std::endl;
-        }
-
         // Render final scores
-        textColor = {0, 0, 0, 255}; // Black color for scores
+        SDL_Color textColor = {255, 255, 255, 255};
         std::string scoreText = "Final Score: " + std::to_string(scoreTeam1) + " - " + std::to_string(scoreTeam2);
-        SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 50);
+        SDL_Texture* scoreTexture = LoadFontTexture(scoreText, "Assets/Fonts/arial.ttf", textColor, 75);
         if (scoreTexture) {
             RenderTexture(scoreTexture, 640, 400); // Centered below "Game Over!"
             SDL_DestroyTexture(scoreTexture);
