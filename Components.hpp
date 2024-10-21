@@ -7,7 +7,6 @@
 #include "Physic2D.hpp"
 #include "cmath"
 
-
 class BallStateMachine : public Component {
 private:
     float maxSpeed = 0;
@@ -15,7 +14,7 @@ private:
 
     GameObject *lastKickedBy = nullptr;
     float bounceKickerCooldown = 0;
-    
+
     float lastKickedTime = 0;
 
     GameObject *lastBindedBy = nullptr;
@@ -306,6 +305,7 @@ private:
     float kickForce;
 
     Vector2 lastDirection = Vector2(0, 0);
+
 public:
     KickControl(GameObject *parent, GameObject *ball, SDL_KeyCode kickKey, float kickForce) : Component(parent) {
         this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
@@ -318,18 +318,27 @@ public:
     }
 
     void Update() {
-        if (rigidbody == nullptr || ballStateMachine == nullptr)
-            return;
-        if (!gameObject->GetComponent<MovementController>() || !gameObject->GetComponent<MovementController>()->GetEnabled())
-            return;
-
-        if (Game::event.type == SDL_KEYDOWN) {
-            if (Game::event.key.keysym.sym == kickKey) {
-                if (rigidbody->velocity.Magnitude() > 0.01f){
-                    lastDirection = rigidbody->velocity.Normalize();
-                }
-                ballStateMachine->Kick(lastDirection, kickForce, gameObject);
+        if (!rigidbody || !ballStateMachine) {
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+            ballStateMachine = ball->GetComponent<BallStateMachine>();
+            if (!rigidbody || !ballStateMachine) {
+                return;
             }
+        }
+
+        auto movementController = gameObject->GetComponent<MovementController>();
+        if (!movementController || !movementController->GetEnabled()) {
+            return;
+        }
+
+        if (Game::event.type == SDL_KEYDOWN && Game::event.key.keysym.sym == kickKey) {
+            if (ballStateMachine->GetBinded() != gameObject) {
+                return;
+            }
+            if (rigidbody->velocity.Magnitude() > 0.01f) {
+                lastDirection = rigidbody->velocity.Normalize();
+            }
+            ballStateMachine->Kick(lastDirection, kickForce, gameObject);
         }
     }
 
@@ -436,7 +445,7 @@ public:
                      targetPosition.y >= dangerZoneYStart && targetPosition.y <= dangerZoneYEnd && !teamHasBall) {
                 Vector2 direction = (targetPosition - currentPosition).Normalize();
                 // Prioritize running toward target position y
-                rigidbody->AddForce(Vector2(direction.x / 4, direction.y * 4) .Normalize() * actualSpeed); 
+                rigidbody->AddForce(Vector2(direction.x / 4, direction.y * 4).Normalize() * actualSpeed);
             }
 
             // Target is neither, restore original position, or team has control of ball
@@ -614,8 +623,8 @@ private:
     Collider2D *collider = nullptr;
 
     Event<> *onClick = nullptr;
-public:
 
+public:
     Button(GameObject *parent) : Component(parent) {
         onClick = new Event<>();
     }
@@ -625,9 +634,10 @@ public:
     }
 
     void Update() {
-        if (collider == nullptr){
+        if (collider == nullptr) {
             collider = gameObject->GetComponent<Collider2D>();
-            if (collider == nullptr) return;
+            if (collider == nullptr)
+                return;
         }
 
         if (Game::event.type == SDL_MOUSEBUTTONDOWN) {
@@ -639,7 +649,7 @@ public:
     }
 
     void Draw() {}
-    
+
     void AddOnClickHandler(std::function<void()> handler) {
         onClick->addHandler(handler);
     }
